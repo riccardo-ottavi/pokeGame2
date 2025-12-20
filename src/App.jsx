@@ -1,4 +1,3 @@
-
 import './App.css'
 import { useEffect, useState } from 'react';
 
@@ -50,6 +49,7 @@ function App() {
 
   }
 
+  //test
   useEffect(() => {
     instancePokemon("player");
     instancePokemon("enemy");
@@ -58,9 +58,7 @@ function App() {
   //----------inizializzazioni---------------
 
   function runGame() {
-    instancePokemon("player");
-    instancePokemon("enemy");
-    handleProgression();
+   
   }
 
   //inizializza player e nemico con this. e gli aggiunge proprietà items e moveset
@@ -69,18 +67,15 @@ function App() {
     if(target === "player"){
       const pokeId = generateRandomId(idLimit)
       const poke = await fetchFromApi("pokemon", pokeId);
-      const instanciatedPlayer = new PokemonInstance(pokeId, 5, 100, 100, null, poke, 0)
+      const instanciatedPlayer = new PokemonInstance(pokeId, 5, calculateHpByLevel(poke.stats[0].base_stat, 5), calculateHpByLevel(poke.stats[0].base_stat, 5), null, poke, 0);
       setPlayer(instanciatedPlayer)
       
     }else{
       const pokeId = generateRandomId(idLimit)
       const poke = await fetchFromApi("pokemon", pokeId);
-      const instanciatedEnemy = new PokemonInstance(pokeId, 5, 100, 100, null, poke, 0)
+      const instanciatedEnemy = new PokemonInstance(pokeId, 5, calculateHpByLevel(poke.stats[0].base_stat, 5), calculateHpByLevel(poke.stats[0].base_stat, 5), null, poke, 0);           
       setEnemy(instanciatedEnemy)
     }
-    
-    initializeMoveset();
-    initializeItems();
   }
 
   
@@ -93,7 +88,8 @@ function App() {
 
   //inizializza il moveset(andrà fatta una chiamata a /moves)
   function initializeMoveset(poke) {
-
+    
+    
   }
 
   //inizializza il moveset(andrà fatta una chiamata a /items)
@@ -143,8 +139,12 @@ function App() {
     return obj
   }
 
+  function calculateHpByLevel(baseHp, level){
+    return Math.floor((2 * baseHp * level) / 100) + level + 10;
+  }
 
-  //main
+
+  //main(---tests----)
   //runGame()
   //fetchFromApi("pokemon",1).then(p => console.log(p))
 
