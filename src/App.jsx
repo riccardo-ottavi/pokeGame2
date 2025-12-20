@@ -5,9 +5,13 @@ function App() {
 
   //----------stati---------------
   const [stage, setStage] = useState(0)
-  const [player, setPlayer] = useState({})
-  const [enemy, setEnemy] = useState({})
   const [isGameOver, setIsGameOver] = useState(false)
+  const [player, setPlayer] = useState({})
+  const [playerStats, setPlayerStats] = useState({})
+  const [enemy, setEnemy] = useState({})
+  const [enemyStats, setEnemyStats] = useState({})
+
+  
 
   //----------costanti---------------
   const baseUrl = "https://pokeapi.co/api/v2/"
@@ -40,9 +44,18 @@ function App() {
       return this.calcHp();
     }
 
+    get speed(){
+      return this.calcSpeed();
+    }
+
     calcHp(){
       return Math.floor((2 * this.baseStat[0].base_stat * this.level) / 100) + this.level + 10;
     }
+
+    calcSpeed(){
+      return Math.floor((2 * this.baseStat[5].base_stat * this.level) / 100 + 5);
+    }
+
   }
 
   //gestisce la logica delle mosse(tipo, fallimento/critico, calcolo esito in danni)
@@ -85,6 +98,7 @@ function App() {
       
       const instanciatedPlayer = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);
       setPlayer(instanciatedPlayer)
+      setPlayerStats(playerStats)
       
       
       
@@ -94,10 +108,11 @@ function App() {
       const poke = await fetchFromApi("pokemon", pokeId);
 
       //inizializza le statistiche in base al livello (inizialmente 5)
-      const playerStats = new Stats(poke.stats, 5);
+      const enemyStats = new Stats(poke.stats, 5);
 
       const instanciatedEnemy = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);           
       setEnemy(instanciatedEnemy)
+      setEnemyStats(enemyStats)
     }
   }
 
@@ -125,8 +140,13 @@ function App() {
 
   }
 
-  function chechWhoFaster(player, enemy) {
-
+  function chechWhoFaster(playerStats, enemyStats) {
+    console.log("velocità player", playerStats.speed, "velocità enemy", enemyStats.speed)
+    if(playerStats.speed > enemyStats.speed){
+      console.log("sei più veloce!")
+    }else{
+      console.log("sei più lento!")
+    }
   }
 
   function useItem(item) {
@@ -171,6 +191,7 @@ function App() {
   //runGame()
 
   console.log("player: ", player, "enemy: " , enemy)
+  chechWhoFaster(playerStats, enemyStats);
 
   return (
     <>
