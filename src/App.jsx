@@ -31,7 +31,18 @@ function App() {
 
   //gestisce la logica dei calcoli relativi alle statistiche
   class Stats {
+    constructor(baseStat, level){
+      this.baseStat = baseStat;
+      this.level = level;
+    }
 
+    get hp(){
+      return this.calcHp();
+    }
+
+    calcHp(){
+      return Math.floor((2 * this.baseStat[0].base_stat * this.level) / 100) + this.level + 10;
+    }
   }
 
   //gestisce la logica delle mosse(tipo, fallimento/critico, calcolo esito in danni)
@@ -65,15 +76,27 @@ function App() {
   async function instancePokemon(target) {
     //capisci se stai impostando player o enemy e assegna pokemon fetchato allo stato 
     if(target === "player"){
+      //istanzia un pokemon a caso
       const pokeId = generateRandomId(idLimit)
       const poke = await fetchFromApi("pokemon", pokeId);
-      const instanciatedPlayer = new PokemonInstance(pokeId, 5, calculateHpByLevel(poke.stats[0].base_stat, 5), calculateHpByLevel(poke.stats[0].base_stat, 5), null, poke, 0);
+
+      //inizializza le statistiche in base al livello (inizialmente 5)
+      const playerStats = new Stats(poke.stats, 5);
+      
+      const instanciatedPlayer = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);
       setPlayer(instanciatedPlayer)
       
+      
+      
     }else{
+      //istanzia un pokemon a caso
       const pokeId = generateRandomId(idLimit)
       const poke = await fetchFromApi("pokemon", pokeId);
-      const instanciatedEnemy = new PokemonInstance(pokeId, 5, calculateHpByLevel(poke.stats[0].base_stat, 5), calculateHpByLevel(poke.stats[0].base_stat, 5), null, poke, 0);           
+
+      //inizializza le statistiche in base al livello (inizialmente 5)
+      const playerStats = new Stats(poke.stats, 5);
+
+      const instanciatedEnemy = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);           
       setEnemy(instanciatedEnemy)
     }
   }
@@ -146,7 +169,6 @@ function App() {
 
   //main(---tests----)
   //runGame()
-  //fetchFromApi("pokemon",1).then(p => console.log(p))
 
   console.log("player: ", player, "enemy: " , enemy)
 
