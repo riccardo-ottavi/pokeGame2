@@ -1,6 +1,6 @@
 
 import './App.css'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 function App() {
 
@@ -19,12 +19,14 @@ function App() {
 
   //inizializza classe per istanziare i pokemon effettivamente in gioco
   class PokemonInstance {
-    constructor(id, level, maxHp, currentHp, status) {
+    constructor(id, level, maxHp, currentHp, status, data, exp) {
       this.id = id;
       this.level = level;
       this.maxHp = maxHp;
       this.currentHp = currentHp;
       this.status = status;
+      this.data = data;
+      this.exp = exp;
     }
   }
 
@@ -48,10 +50,14 @@ function App() {
 
   }
 
+  useEffect(() => {
+    instancePokemon("player");
+    instancePokemon("enemy");
+  },[])
+
   //----------inizializzazioni---------------
 
   function runGame() {
-    console.log("il gioco è iniziato");
     instancePokemon("player");
     instancePokemon("enemy");
     handleProgression();
@@ -60,17 +66,19 @@ function App() {
   //inizializza player e nemico con this. e gli aggiunge proprietà items e moveset
   async function instancePokemon(target) {
     //capisci se stai impostando player o enemy e assegna pokemon fetchato allo stato 
-    console.log("hai chiamato l'inizializzazione dei pokemon di", target);
     if(target === "player"){
-      const poke = await fetchFromApi("pokemon", generateRandomId(idLimit));
-      setPlayer(poke)
+      const pokeId = generateRandomId(idLimit)
+      const poke = await fetchFromApi("pokemon", pokeId);
+      const instanciatedPlayer = new PokemonInstance(pokeId, 5, 100, 100, null, poke, 0)
+      setPlayer(instanciatedPlayer)
       
     }else{
-      const poke = await fetchFromApi("pokemon", generateRandomId(idLimit));
-      setEnemy(poke)
+      const pokeId = generateRandomId(idLimit)
+      const poke = await fetchFromApi("pokemon", pokeId);
+      const instanciatedEnemy = new PokemonInstance(pokeId, 5, 100, 100, null, poke, 0)
+      setEnemy(instanciatedEnemy)
     }
     
-    console.log(player, enemy)
     initializeMoveset();
     initializeItems();
   }
@@ -111,7 +119,6 @@ function App() {
 
   //genera la progressione in rapporto agli stage 
   function handleProgression() {
-    console.log("avvio progressione in base allo stage. STAGE: ", stage)
   }
 
   function generateNewFight(stage) {
@@ -140,6 +147,8 @@ function App() {
   //main
   //runGame()
   //fetchFromApi("pokemon",1).then(p => console.log(p))
+
+  console.log("player: ", player, "enemy: " , enemy)
 
   return (
     <>
