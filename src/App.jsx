@@ -12,7 +12,35 @@ function App() {
 
   //----------costanti---------------
   const baseUrl = "https://pokeapi.co/api/v2/"
+  //qui puoi decidere entro quale id spawnano i pokemon (puoi in futuro far decidere al player)
+  const idLimit = 1000;
 
+  //----------classi---------------
+
+  //inizializza classe per istanziare i pokemon effettivamente in gioco
+  class PokemonInstance {
+    
+  }
+
+  //gestisce la logica dei calcoli relativi alle statistiche
+  class Stats {
+    
+  }
+
+  //gestisce la logica delle mosse(tipo, fallimento/critico, calcolo esito in danni)
+  class Moves {
+
+  }
+
+  //gestisce la logica degli oggetti
+  class Items{
+
+  }
+
+  //gestisce andamento del gioco
+  class Progression{
+
+  }
 
   //----------inizializzazioni---------------
 
@@ -38,12 +66,12 @@ function App() {
 
   //inizializza il moveset(andrà fatta una chiamata a /moves)
   function initializeMoveset(poke){
-    console.log("hai inizializzato i moveset dei pokemon (player e nemico)");
+
   }
 
   //inizializza il moveset(andrà fatta una chiamata a /items)
   function initializeItems(){
-    console.log("hai inizializzato gli item dei pokemon (player e nemico)");
+
   }
 
   //------------fight system-------------
@@ -75,9 +103,17 @@ function App() {
 
   }
 
-  //runGame();
-  fetchFromApi("item",1)
-  .then(poke => console.log(poke))
+  //----------utilities---------------
+  // id casuale per randomizzare da 0 a un limite 
+  function generateRandomId(max){
+    const random = Math.round(Math.random() * max)
+    return random
+  }
+
+
+  //main
+  runGame()
+ 
 
   return (
     <>
