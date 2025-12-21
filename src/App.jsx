@@ -23,6 +23,7 @@ function App() {
   //qui puoi decidere entro quale id spawnano i pokemon (puoi in futuro far decidere al player)
   const idLimit = 1000;
 
+
   //----------classi---------------
 
   //inizializza classe per istanziare i pokemon effettivamente in gioco
@@ -63,10 +64,6 @@ function App() {
 
   }
 
-  //gestisce la logica delle mosse(tipo, fallimento/critico, calcolo esito in danni)
-  class Moves {
-
-  }
 
   //gestisce la logica degli oggetti
   class Items {
@@ -126,6 +123,10 @@ function App() {
     }
   }
 
+  function calculateMoveOutcome(attacker, defencer, attackerMove){
+    console.log(attacker.data.name, "deals", attackerMove.power, "to", defencer.data.name)
+  }
+
   //fetcha qualcosa
   async function fetchFromApi(category, id) {
     const requestedPromise = await fetchJson(`${baseUrl}${category}/${id}`)
@@ -172,11 +173,12 @@ function App() {
 
   function sendMove(pokemon, move){
     console.log(pokemon?.data?.name, "use", move?.name)
+    
   }
 
 
   function executeEnemyTurn(enemy, enemyMoveSet){
-    console.log("Turno nemico: ", enemy?.data?.name, "usa", enemyMoveSet[0]?.name)
+    console.log("Turno nemico: ", enemy?.data?.name, "usa", enemyMoveSet[generateRandomId(3)]?.name)
   }
 
   function useMove(pokemon, selectedMove){
@@ -262,7 +264,7 @@ function App() {
         >{move.name}</p>
         
       ))}
-      <button onClick={() => sendMove(player, selectedMove)}>Confirm</button>
+      <button onClick={() => calculateMoveOutcome(player, enemy, selectedMove)}>Confirm</button>
       <p>Mossa attiva: {selectedMove?.name}</p>
       <button onClick={() => executeEnemyTurn(enemy, enemyMoveSet)}>Esegui turno nemico</button>
     </>
