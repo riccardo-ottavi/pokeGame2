@@ -141,8 +141,20 @@ function App() {
     }
   }
 
-  function calculateMoveOutcome(attacker, defencer, attackerMove, playerStats, enemyStats){
-    console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove), "to", defencer.data.name, "using", attackerMove.name);
+  function sendPlayerChoice(attacker, defencer, attackerMove, playerStats, enemyStats, enemyMoveSet){
+    //controlla chi è più veloce
+    if(chechWhoFaster(playerStats, enemyStats)){
+      console.log("sei più veloce!")
+      console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove), "to", defencer.data.name, "using", attackerMove.name);
+      executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
+      //checkIfAlive()
+    }else{
+      console.log("sei più lento!")
+      executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
+      console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove), "to", defencer.data.name, "using", attackerMove.name);
+      
+    }
+    
     
   }
 
@@ -201,7 +213,7 @@ function App() {
 
 
   function executeEnemyTurn(enemy, player, enemyMoveSet, playerStats, enemyStats){
-    console.log(enemy.data.name, "deals", trueDmgCalculator(enemy, playerStats, enemyStats, enemyMoveSet[0]), "to", player.data.name, "using", enemyMoveSet[0].name);
+    console.log(enemy?.data?.name, "deals", trueDmgCalculator(enemy, playerStats, enemyStats, enemyMoveSet[0]), "to", player.data.name, "using", enemyMoveSet[0].name);
   }
 
   function useMove(pokemon, selectedMove){
@@ -215,10 +227,8 @@ function App() {
   //se il player è più veloce ritorna true
   function chechWhoFaster(playerStats, enemyStats) {
     if (playerStats.speed > enemyStats.speed) {
-      console.log("sei più veloce!")
       return true
     } else {
-      console.log("sei più lento!")
       return false
     }
   }
@@ -292,9 +302,8 @@ function App() {
         >{move.name}</p>
         
       ))}
-      <button onClick={() => calculateMoveOutcome(player, enemy, selectedMove, playerStats, enemyStats)}>Confirm</button>
+      <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats, enemyMoveSet)}>Confirm</button>
       <p>Mossa attiva: {selectedMove?.name}</p>
-      <button onClick={() => executeEnemyTurn(enemy, player, enemyMoveSet, playerStats, enemyStats)}>Esegui turno nemico</button>
     </>
   )
 }
