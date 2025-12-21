@@ -253,6 +253,9 @@ function App() {
   
       <img src={player.data?.sprites.front_default} alt="" />
       <img src={enemy.data?.sprites.front_default} alt="" />
+      {playerMoveSet.map(move => (
+        <p>{move.name}</p>
+      ))}
     </>
   )
 }
