@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 function App() {
   //----------stati---------------
-  const [stage, setStage] = useState(0)
+  const [stage, setStage] = useState(1)
   const [isGameOver, setIsGameOver] = useState(false)
 
   const [player, setPlayer] = useState({})
@@ -79,12 +79,12 @@ function App() {
 
   //test
   useEffect(() => {
-    instancePokemon("player");
-    instancePokemon("enemy");
+    handleProgression();
   }, [])
 
    useEffect(() => {
     instancePokemon("enemy");
+    setNewStage()
   }, [stage])
 
   //----------inizializzazioni---------------
@@ -177,6 +177,10 @@ function App() {
     }
   }
 
+  function setNewStage(){
+    console.log("iniziamo il round", stage)
+  }
+
   function executePlayerTurn(player, enemy, playerStats, enemyStats, selectedMove) {
     console.log(player.data.name, "deals", trueDmgCalculator(player, playerStats, enemyStats, selectedMove), "to", enemy.data.name, "using", selectedMove.name);
     updateHp(enemy, "-", trueDmgCalculator(player, playerStats, enemyStats, selectedMove))
@@ -199,9 +203,10 @@ function App() {
       console.log("fine gioco!", player.data.name, "è esausto")
       setIsGameOver(true);
       //riavvia il gioco
-      setStage(0);
+      handleProgression();
+      setStage(1);
     }else if(enemy.currentHp <= 0){
-      console.log("fine gioco!", enemy.data.name, "è esausto")
+      console.log("Complimenti!", enemy.data.name, "è esausto")
       //lascia che lo stage prosegua inizializzando
       incrementStage(1)
     }
@@ -232,6 +237,8 @@ function App() {
 
   //genera la progressione in rapporto agli stage 
   function handleProgression() {
+    instancePokemon("player");
+    instancePokemon("enemy");
   }
 
   function generateNewFight(stage) {
