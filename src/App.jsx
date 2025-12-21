@@ -250,6 +250,9 @@ function App() {
       <h1>Prova</h1>
       <div>{stage}</div>
       <button onClick={incrementStage}>Aumenta stage</button>
+  
+      <img src={player.data?.sprites.front_default} alt="" />
+      <img src={enemy.data?.sprites.front_default} alt="" />
     </>
   )
 }
