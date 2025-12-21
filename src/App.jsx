@@ -16,6 +16,8 @@ function App() {
   const [playerMoveSet, setPlayerMoveSet] = useState([])
   const [enemyMoveSet, setEnemyMoveSet] = useState([])
 
+  const [playerInv, setPlayerInv] = useState([])
+
 
 
   //----------costanti---------------
@@ -70,7 +72,12 @@ function App() {
 
   //gestisce la logica degli oggetti
   class Items {
-
+    constructor(data, outcomeText, quantity, healing){
+      this.data = data;
+      this.outcomeText = outcomeText;
+      this. quantity = quantity;
+      this.healing = healing
+    }
   }
 
   //gestisce andamento del gioco
@@ -105,6 +112,7 @@ function App() {
       setPlayer(instanciatedPlayer)
       setPlayerStats(playerStats)
       initializeMoveset(instanciatedPlayer, 4, "player")
+      initializeItems("player", instanciatedPlayer)
 
     } else {
       //istanzia un pokemon a caso
@@ -114,7 +122,7 @@ function App() {
       //inizializza le statistiche in base al livello (inizialmente 5)
       const enemyStats = new Stats(poke.stats, 5);
 
-      const instanciatedEnemy = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);
+      const instanciatedEnemy = new PokemonInstance(pokeId, 5, enemyStats.hp, enemyStats.hp, null, poke, 0);
       setEnemy(instanciatedEnemy)
       setEnemyStats(enemyStats)
       initializeMoveset(instanciatedEnemy, 4,"enemy")
@@ -155,8 +163,8 @@ function App() {
   }
 
   //inizializza il moveset(andrà fatta una chiamata a /items)
-  function initializeItems() {
-
+  function initializeItems(target, poke) {
+    setPlayerInv(["potion"])
   }
 
   //------------fight system-------------
@@ -213,6 +221,7 @@ function App() {
   chechWhoFaster(playerStats, enemyStats);
   console.log("moveset del player", playerMoveSet)
   console.log("moveset del nemico", enemyMoveSet)
+  console.log(playerInv)
   
 
   return (
