@@ -22,7 +22,8 @@ function App() {
   const baseUrl = "https://pokeapi.co/api/v2/"
   //qui puoi decidere entro quale id spawnano i pokemon (puoi in futuro far decidere al player)
   const idLimit = 1000;
-
+  
+                      
 
   //----------classi---------------
 
@@ -54,12 +55,29 @@ function App() {
       return this.calcSpeed();
     }
 
+    get attack() {
+      return this.calcAttack();
+    }
+
+    get defense() {
+      return this.calcDefense();
+    }
+
+
     calcHp() {
       return Math.floor((2 * this.baseStat[0].base_stat * this.level) / 100) + this.level + 10;
     }
 
     calcSpeed() {
       return Math.floor((2 * this.baseStat[5].base_stat * this.level) / 100 + 5);
+    }
+
+    calcAttack() {
+      return Math.floor((2 * this.baseStat[1].base_stat * this.level) / 100 + 5);
+    }
+
+    calcDefense() {
+      return Math.floor((2 * this.baseStat[2].base_stat * this.level) / 100 + 5);
     }
 
   }
@@ -123,8 +141,9 @@ function App() {
     }
   }
 
-  function calculateMoveOutcome(attacker, defencer, attackerMove){
-    console.log(attacker.data.name, "deals", attackerMove.power, "to", defencer.data.name)
+  function calculateMoveOutcome(attacker, defencer, attackerMove, playerStats, enemyStats){
+    console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove), "to", defencer.data.name, "using", attackerMove.name);
+    
   }
 
   //fetcha qualcosa
@@ -176,9 +195,13 @@ function App() {
     
   }
 
+  function enemyIa(enemy, player, enemyMoveSet,){
 
-  function executeEnemyTurn(enemy, enemyMoveSet){
-    console.log("Turno nemico: ", enemy?.data?.name, "usa", enemyMoveSet[generateRandomId(3)]?.name)
+  }
+
+
+  function executeEnemyTurn(enemy, player, enemyMoveSet, playerStats, enemyStats){
+    console.log(enemy.data.name, "deals", trueDmgCalculator(enemy, playerStats, enemyStats, enemyMoveSet[0]), "to", player.data.name, "using", enemyMoveSet[0].name);
   }
 
   function useMove(pokemon, selectedMove){
@@ -238,6 +261,11 @@ function App() {
     return obj
   }
 
+  function trueDmgCalculator(attacker, attackerStats, defenderStats, move){
+    const damage = ((((2 * attacker.level) / 5 + 2) * move.power * attackerStats.attack / defenderStats.defense) / 50) + 2
+    return Math.floor(damage)
+  }
+
 
   //main(---tests----)
   //runGame()
@@ -264,9 +292,9 @@ function App() {
         >{move.name}</p>
         
       ))}
-      <button onClick={() => calculateMoveOutcome(player, enemy, selectedMove)}>Confirm</button>
+      <button onClick={() => calculateMoveOutcome(player, enemy, selectedMove, playerStats, enemyStats)}>Confirm</button>
       <p>Mossa attiva: {selectedMove?.name}</p>
-      <button onClick={() => executeEnemyTurn(enemy, enemyMoveSet)}>Esegui turno nemico</button>
+      <button onClick={() => executeEnemyTurn(enemy, player, enemyMoveSet, playerStats, enemyStats)}>Esegui turno nemico</button>
     </>
   )
 }
