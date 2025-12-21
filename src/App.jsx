@@ -146,13 +146,15 @@ function App() {
     if(chechWhoFaster(playerStats, enemyStats)){
       console.log("sei più veloce!")
       console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove), "to", defencer.data.name, "using", attackerMove.name);
+      updateHp(defencer, "-", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove))
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
-      //checkIfAlive()
+      checkIfAlive(attacker, defencer)
     }else{
       console.log("sei più lento!")
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
+      updateHp(defencer, "-", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove))
       console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove), "to", defencer.data.name, "using", attackerMove.name);
-      
+      checkIfAlive(attacker, defencer)
     }
     
     
@@ -214,6 +216,7 @@ function App() {
 
   function executeEnemyTurn(enemy, player, enemyMoveSet, playerStats, enemyStats){
     console.log(enemy?.data?.name, "deals", trueDmgCalculator(enemy, playerStats, enemyStats, enemyMoveSet[0]), "to", player.data.name, "using", enemyMoveSet[0].name);
+    updateHp(player, "-", trueDmgCalculator(enemy, playerStats, enemyStats, enemyMoveSet[0]))
   }
 
   function useMove(pokemon, selectedMove){
@@ -222,6 +225,18 @@ function App() {
 
   function dealDmg(){
 
+  }
+
+  function checkIfAlive(player, enemy){
+    console.log("vita player: ", player.currentHp, "vita nemico: ", enemy.currentHp )
+  }
+
+  function updateHp(pokemon, operator, ammount){
+    if(operator === "+"){
+      pokemon.currentHp = pokemon.currentHp + ammount
+    }else{
+      pokemon.currentHp = pokemon.currentHp - ammount
+    }
   }
 
   //se il player è più veloce ritorna true
