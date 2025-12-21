@@ -72,10 +72,9 @@ function App() {
 
   //gestisce la logica degli oggetti
   class Items {
-    constructor(data, outcomeText, quantity, healing){
+    constructor(data, outcomeText, healing){
       this.data = data;
       this.outcomeText = outcomeText;
-      this. quantity = quantity;
       this.healing = healing
     }
   }
@@ -112,7 +111,7 @@ function App() {
       setPlayer(instanciatedPlayer)
       setPlayerStats(playerStats)
       initializeMoveset(instanciatedPlayer, 4, "player")
-      initializeItems("player", instanciatedPlayer)
+      initializeItems("player", instanciatedPlayer);
 
     } else {
       //istanzia un pokemon a caso
@@ -128,8 +127,6 @@ function App() {
       initializeMoveset(instanciatedEnemy, 4,"enemy")
     }
   }
-
-
 
   //fetcha qualcosa
   async function fetchFromApi(category, id) {
@@ -163,20 +160,39 @@ function App() {
   }
 
   //inizializza il moveset(andrà fatta una chiamata a /items)
-  function initializeItems(target, poke) {
-    setPlayerInv(["potion"])
+  async function initializeItems() {
+    const potion = await fetchFromApi("item", "potion")
+    potion.quantity = 5;
+    const hpPotion = new Items(potion,"You healed for", 20)
+    setPlayerInv(hpPotion)
   }
 
   //------------fight system-------------
   function handleFight(player, enemy) {
+    
+  }
+
+
+  function executeEnemyTurn(){
 
   }
 
+  function useMove(){
+
+  }
+
+  function dealDmg(){
+
+  }
+
+  //se il player è più veloce ritorna true
   function chechWhoFaster(playerStats, enemyStats) {
     if (playerStats.speed > enemyStats.speed) {
       console.log("sei più veloce!")
+      return true
     } else {
       console.log("sei più lento!")
+      return false
     }
   }
 
@@ -199,10 +215,15 @@ function App() {
 
   }
 
+  function incrementStage(){
+    setStage(stage + 1)
+  }
+  
+
   //----------utilities---------------
   // id casuale per randomizzare da 0 a un limite 
   function generateRandomId(max) {
-    const random = Math.round(Math.random() * max)
+    const random = Math.round(Math.random() * max);
     return random
   }
 
@@ -217,16 +238,18 @@ function App() {
   //main(---tests----)
   //runGame()
 
-  console.log("player: ", player, "enemy: ", enemy)
-  chechWhoFaster(playerStats, enemyStats);
-  console.log("moveset del player", playerMoveSet)
-  console.log("moveset del nemico", enemyMoveSet)
-  console.log(playerInv)
-  
+  console.log("player: ", player, "enemy: ", enemy);
+  console.log("moveset del player", playerMoveSet);
+  console.log("moveset del nemico", enemyMoveSet);
+  console.log("inventario",playerInv);
+  handleFight(player, enemy);
+ 
 
   return (
     <>
       <h1>Prova</h1>
+      <div>{stage}</div>
+      <button onClick={incrementStage}>Aumenta stage</button>
     </>
   )
 }
