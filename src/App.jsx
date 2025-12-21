@@ -36,6 +36,14 @@ function App() {
     }
   }
 
+  class Modifiers {
+    constructor(attacker, defender, move){
+      this.attacker = attacker;
+      this.defender = defender;
+      this.move = move;
+    }
+  }
+
   //gestisce la logica dei calcoli relativi alle statistiche
   class Stats {
     constructor(baseStat, level) {
@@ -182,15 +190,33 @@ function App() {
   }
 
   function executePlayerTurn(player, enemy, playerStats, enemyStats, selectedMove) {
-    console.log(player.data.name, "deals", trueDmgCalculator(player, playerStats, enemyStats, selectedMove), "to", enemy.data.name, "using", selectedMove.name);
-    updateHp(enemy, "-", trueDmgCalculator(player, playerStats, enemyStats, selectedMove))
+    useMove(player, selectedMove, enemy, playerStats, enemyStats)
   }
 
-  function executeEnemyTurn(enemy, player, enemyMoveSet, playerStats, enemyStats) {
-    console.log(enemy?.data?.name, "deals", trueDmgCalculator(enemy, playerStats, enemyStats, enemyMoveSet[0]), "to", player.data.name, "using", enemyMoveSet[0].name);
-    updateHp(player, "-", trueDmgCalculator(enemy, playerStats, enemyStats, enemyMoveSet[0]))
+  function executeEnemyTurn(enemy, player, enemyMoveSet, defenderStats, enemyStats) {
+    useMove(enemy, enemyMoveSet[0], player, enemyStats, defenderStats )
+  }
+  function useMove(attacker, move, defender, attackerStats, defenderStats){
+    if (move.power === null){
+      console.log("la mossa non fa danno!")
+      return
+    }else{
+      console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender), "to", defender.data.name, "using", move.name);
+      updateHp(defender, "-", trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender))
+    }
   }
   
+  function evaluateModifiers(attackerStats, defenderStats,  move, attacker, defender){
+    let dmgMoltiplier = 1;
+    console.log("precisione mossa", move.accuracy)
+    const random = generateRandomId(100);
+    if(random > move.accuracy){
+      console.log("la mossa fallisce!")
+      return
+    }
+
+    return dmgMoltiplier
+  }
 
   
   function enemyIa(enemy, player, enemyMoveSet,) {
@@ -267,8 +293,8 @@ function App() {
     return obj
   }
 
-  function trueDmgCalculator(attacker, attackerStats, defenderStats, move) {
-    const damage = ((((2 * attacker.level) / 5 + 2) * move.power * attackerStats.attack / defenderStats.defense) / 50) + 2
+  function trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender) {
+    const damage = ((((2 * attacker.level) / 5 + 2) * move.power * attackerStats.attack / defenderStats.defense) / 50) + 2 * evaluateModifiers(attackerStats, defenderStats,  move, attacker, defender)
     return Math.floor(damage)
   }
 
