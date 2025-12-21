@@ -104,7 +104,7 @@ function App() {
       const instanciatedPlayer = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);
       setPlayer(instanciatedPlayer)
       setPlayerStats(playerStats)
-      initializeMoveset(instanciatedPlayer, 4)
+      initializeMoveset(instanciatedPlayer, 4, "player")
 
     } else {
       //istanzia un pokemon a caso
@@ -117,6 +117,7 @@ function App() {
       const instanciatedEnemy = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);
       setEnemy(instanciatedEnemy)
       setEnemyStats(enemyStats)
+      initializeMoveset(instanciatedEnemy, 4,"enemy")
     }
   }
 
@@ -129,7 +130,7 @@ function App() {
   }
 
   //inizializza il moveset 
-  async function initializeMoveset(pokemon, movesNumber) {
+  async function initializeMoveset(pokemon, movesNumber, target) {
     pokemon.moveset = [];
     for (let i = 0; i < movesNumber; i++) {
       const moveName = pokemon.data.moves[i].move.name
@@ -144,7 +145,12 @@ function App() {
     }
     const moves = await Promise.all(promises)
 
-    setPlayerMoveSet(moves)
+    if (target === "player"){
+      setPlayerMoveSet(moves)
+    }else{
+      setEnemyMoveSet(moves)
+    }
+    
     return moves
   }
 
@@ -205,7 +211,8 @@ function App() {
 
   console.log("player: ", player, "enemy: ", enemy)
   chechWhoFaster(playerStats, enemyStats);
-  console.log(playerMoveSet)
+  console.log("moveset del player", playerMoveSet)
+  console.log("moveset del nemico", enemyMoveSet)
   
 
   return (
