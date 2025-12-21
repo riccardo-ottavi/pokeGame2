@@ -6,12 +6,17 @@ function App() {
   //----------stati---------------
   const [stage, setStage] = useState(0)
   const [isGameOver, setIsGameOver] = useState(false)
+
   const [player, setPlayer] = useState({})
   const [playerStats, setPlayerStats] = useState({})
+
   const [enemy, setEnemy] = useState({})
   const [enemyStats, setEnemyStats] = useState({})
 
-  
+  const [playerMoveSet, setPlayerMoveSet] = useState([])
+  const [enemyMoveSet, setEnemyMoveSet] = useState([])
+
+
 
   //----------costanti---------------
   const baseUrl = "https://pokeapi.co/api/v2/"
@@ -35,24 +40,24 @@ function App() {
 
   //gestisce la logica dei calcoli relativi alle statistiche
   class Stats {
-    constructor(baseStat, level){
+    constructor(baseStat, level) {
       this.baseStat = baseStat;
       this.level = level;
     }
 
-    get hp(){
+    get hp() {
       return this.calcHp();
     }
 
-    get speed(){
+    get speed() {
       return this.calcSpeed();
     }
 
-    calcHp(){
+    calcHp() {
       return Math.floor((2 * this.baseStat[0].base_stat * this.level) / 100) + this.level + 10;
     }
 
-    calcSpeed(){
+    calcSpeed() {
       return Math.floor((2 * this.baseStat[5].base_stat * this.level) / 100 + 5);
     }
 
@@ -77,32 +82,31 @@ function App() {
   useEffect(() => {
     instancePokemon("player");
     instancePokemon("enemy");
-  },[])
+  }, [])
 
   //----------inizializzazioni---------------
 
   function runGame() {
-   
+
   }
 
   //inizializza player e nemico con this. e gli aggiunge proprietà items e moveset
   async function instancePokemon(target) {
     //capisci se stai impostando player o enemy e assegna pokemon fetchato allo stato 
-    if(target === "player"){
+    if (target === "player") {
       //istanzia un pokemon a caso
       const pokeId = generateRandomId(idLimit)
       const poke = await fetchFromApi("pokemon", pokeId);
 
       //inizializza le statistiche in base al livello (inizialmente 5)
       const playerStats = new Stats(poke.stats, 5);
-      
+
       const instanciatedPlayer = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);
       setPlayer(instanciatedPlayer)
       setPlayerStats(playerStats)
-      
-      
-      
-    }else{
+      initializeMoveset(instanciatedPlayer, 4)
+
+    } else {
       //istanzia un pokemon a caso
       const pokeId = generateRandomId(idLimit)
       const poke = await fetchFromApi("pokemon", pokeId);
@@ -110,13 +114,13 @@ function App() {
       //inizializza le statistiche in base al livello (inizialmente 5)
       const enemyStats = new Stats(poke.stats, 5);
 
-      const instanciatedEnemy = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);           
+      const instanciatedEnemy = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);
       setEnemy(instanciatedEnemy)
       setEnemyStats(enemyStats)
     }
   }
 
-  
+
 
   //fetcha qualcosa
   async function fetchFromApi(category, id) {
@@ -124,10 +128,24 @@ function App() {
     return requestedPromise
   }
 
-  //inizializza il moveset(andrà fatta una chiamata a /moves)
-  function initializeMoveset(poke) {
-    
-    
+  //inizializza il moveset 
+  async function initializeMoveset(pokemon, movesNumber) {
+    pokemon.moveset = [];
+    for (let i = 0; i < movesNumber; i++) {
+      const moveName = pokemon.data.moves[i].move.name
+      pokemon.moveset[i] = moveName
+    }
+
+    //le chiamate trasformano la stringa in oggetto completo con info mosse come PP o Potenza
+    const promises = [];
+    for (let i = 0; i < pokemon.moveset.length; i++) {
+      const moveData = fetchFromApi("move", pokemon.moveset[i])
+      promises.push(moveData)
+    }
+    const moves = await Promise.all(promises)
+
+    setPlayerMoveSet(moves)
+    return moves
   }
 
   //inizializza il moveset(andrà fatta una chiamata a /items)
@@ -141,10 +159,9 @@ function App() {
   }
 
   function chechWhoFaster(playerStats, enemyStats) {
-    console.log("velocità player", playerStats.speed, "velocità enemy", enemyStats.speed)
-    if(playerStats.speed > enemyStats.speed){
+    if (playerStats.speed > enemyStats.speed) {
       console.log("sei più veloce!")
-    }else{
+    } else {
       console.log("sei più lento!")
     }
   }
@@ -182,16 +199,14 @@ function App() {
     return obj
   }
 
-  function calculateHpByLevel(baseHp, level){
-    return Math.floor((2 * baseHp * level) / 100) + level + 10;
-  }
-
 
   //main(---tests----)
   //runGame()
 
-  console.log("player: ", player, "enemy: " , enemy)
+  console.log("player: ", player, "enemy: ", enemy)
   chechWhoFaster(playerStats, enemyStats);
+  console.log(playerMoveSet)
+  
 
   return (
     <>
