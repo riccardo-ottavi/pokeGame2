@@ -145,19 +145,22 @@ function App() {
     //controlla chi è più veloce
     if(chechWhoFaster(playerStats, enemyStats)){
       console.log("sei più veloce!")
-      console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove), "to", defencer.data.name, "using", attackerMove.name);
-      updateHp(defencer, "-", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove))
+      executePlayerTurn(attacker, defencer, playerStats, enemyStats, selectedMove)
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
       checkIfAlive(attacker, defencer)
     }else{
       console.log("sei più lento!")
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
-      updateHp(defencer, "-", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove))
-      console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, playerStats, enemyStats, attackerMove), "to", defencer.data.name, "using", attackerMove.name);
+      executePlayerTurn(attacker, defencer, playerStats, enemyStats, selectedMove)
       checkIfAlive(attacker, defencer)
     }
     
     
+  }
+
+  function executePlayerTurn(player, enemy, playerStats, enemyStats, selectedMove){
+    console.log(player.data.name, "deals", trueDmgCalculator(player, playerStats, enemyStats, selectedMove), "to", enemy.data.name, "using", selectedMove.name);
+    updateHp(enemy, "-", trueDmgCalculator(player, playerStats, enemyStats, selectedMove))
   }
 
   //fetcha qualcosa
