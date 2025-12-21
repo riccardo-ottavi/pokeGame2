@@ -2,7 +2,6 @@ import './App.css'
 import { useEffect, useState } from 'react';
 
 function App() {
-
   //----------stati---------------
   const [stage, setStage] = useState(0)
   const [isGameOver, setIsGameOver] = useState(false)
@@ -17,13 +16,10 @@ function App() {
 
   const [selectedMove, setSelectedMove] = useState()
 
-
   //----------costanti---------------
   const baseUrl = "https://pokeapi.co/api/v2/"
   //qui puoi decidere entro quale id spawnano i pokemon (puoi in futuro far decidere al player)
   const idLimit = 1000;
-
-
 
   //----------classi---------------
 
@@ -46,42 +42,31 @@ function App() {
       this.baseStat = baseStat;
       this.level = level;
     }
-
     get hp() {
       return this.calcHp();
     }
-
     get speed() {
       return this.calcSpeed();
     }
-
     get attack() {
       return this.calcAttack();
     }
-
     get defense() {
       return this.calcDefense();
     }
-
-
     calcHp() {
       return Math.floor((2 * this.baseStat[0].base_stat * this.level) / 100) + this.level + 10;
     }
-
     calcSpeed() {
       return Math.floor((2 * this.baseStat[5].base_stat * this.level) / 100 + 5);
     }
-
     calcAttack() {
       return Math.floor((2 * this.baseStat[1].base_stat * this.level) / 100 + 5);
     }
-
     calcDefense() {
       return Math.floor((2 * this.baseStat[2].base_stat * this.level) / 100 + 5);
     }
-
   }
-
 
   //gestisce la logica degli oggetti
   class Items {
@@ -92,25 +77,15 @@ function App() {
     }
   }
 
-  //gestisce andamento del gioco
-  class Encounter {
-    constructor(player, enemy, playerMoveSet, playerStats, enemyMoveSet, enemyStats, stage, reward){
-      this.player = player;
-      this.enemy = enemy;
-      this.playerMoveSet = playerMoveSet;
-      this.playerStats = playerStats;
-      this.enemyMoveSet = enemyMoveSet;
-      this.enemyStats = enemyStats;
-      this.stage = stage;
-      this.reward = reward;
-    }
-  }
-
   //test
   useEffect(() => {
     instancePokemon("player");
     instancePokemon("enemy");
   }, [])
+
+   useEffect(() => {
+    instancePokemon("enemy");
+  }, [stage])
 
   //----------inizializzazioni---------------
 
@@ -211,24 +186,23 @@ function App() {
     console.log(enemy?.data?.name, "deals", trueDmgCalculator(enemy, playerStats, enemyStats, enemyMoveSet[0]), "to", player.data.name, "using", enemyMoveSet[0].name);
     updateHp(player, "-", trueDmgCalculator(enemy, playerStats, enemyStats, enemyMoveSet[0]))
   }
+  
 
-  function handleFight(player, enemy) {
-
-  }
-
-
+  
   function enemyIa(enemy, player, enemyMoveSet,) {
 
   }
-
 
   function checkIfAlive(player, enemy) {
     console.log("vita player: ", player.currentHp, "vita nemico: ", enemy.currentHp)
     if (player.currentHp <= 0) {
       console.log("fine gioco!", player.data.name, "è esausto")
       setIsGameOver(true);
+      //riavvia il gioco
+      setStage(0);
     }else if(enemy.currentHp <= 0){
       console.log("fine gioco!", enemy.data.name, "è esausto")
+      //lascia che lo stage prosegua inizializzando
       incrementStage(1)
     }
   }
@@ -254,7 +228,6 @@ function App() {
 
   }
 
-
   //----------progressione---------------
 
   //genera la progressione in rapporto agli stage 
@@ -272,7 +245,6 @@ function App() {
   function incrementStage(n) {
     setStage(stage + n)
   }
-
 
   //----------utilities---------------
   // id casuale per randomizzare da 0 a un limite 
@@ -293,16 +265,10 @@ function App() {
     return Math.floor(damage)
   }
 
-
   //main(---tests----)
   //runGame()
 
   console.log("player: ", player, "enemy: ", enemy);
-  console.log("moveset del player", playerMoveSet);
-  console.log("moveset del nemico", enemyMoveSet);
-  console.log("inventario", playerInv);
-  handleFight(player, enemy);
-
 
   return (
     <>
