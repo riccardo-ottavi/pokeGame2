@@ -22,8 +22,8 @@ function App() {
   const baseUrl = "https://pokeapi.co/api/v2/"
   //qui puoi decidere entro quale id spawnano i pokemon (puoi in futuro far decidere al player)
   const idLimit = 1000;
-  
-                      
+
+
 
   //----------classi---------------
 
@@ -85,7 +85,7 @@ function App() {
 
   //gestisce la logica degli oggetti
   class Items {
-    constructor(data, outcomeText, healing){
+    constructor(data, outcomeText, healing) {
       this.data = data;
       this.outcomeText = outcomeText;
       this.healing = healing
@@ -93,8 +93,17 @@ function App() {
   }
 
   //gestisce andamento del gioco
-  class Progression {
-
+  class Encounter {
+    constructor(player, enemy, playerMoveSet, playerStats, enemyMoveSet, enemyStats, stage, reward){
+      this.player = player;
+      this.enemy = enemy;
+      this.playerMoveSet = playerMoveSet;
+      this.playerStats = playerStats;
+      this.enemyMoveSet = enemyMoveSet;
+      this.enemyStats = enemyStats;
+      this.stage = stage;
+      this.reward = reward;
+    }
   }
 
   //test
@@ -104,10 +113,6 @@ function App() {
   }, [])
 
   //----------inizializzazioni---------------
-
-  function runGame() {
-
-  }
 
   //inizializza player e nemico con this. e gli aggiunge proprietà items e moveset
   async function instancePokemon(target) {
@@ -137,30 +142,8 @@ function App() {
       const instanciatedEnemy = new PokemonInstance(pokeId, 5, enemyStats.hp, enemyStats.hp, null, poke, 0);
       setEnemy(instanciatedEnemy)
       setEnemyStats(enemyStats)
-      initializeMoveset(instanciatedEnemy, 4,"enemy")
+      initializeMoveset(instanciatedEnemy, 4, "enemy")
     }
-  }
-
-  function sendPlayerChoice(attacker, defencer, attackerMove, playerStats, enemyStats, enemyMoveSet){
-    //controlla chi è più veloce
-    if(chechWhoFaster(playerStats, enemyStats)){
-      console.log("sei più veloce!")
-      executePlayerTurn(attacker, defencer, playerStats, enemyStats, selectedMove)
-      executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
-      checkIfAlive(attacker, defencer)
-    }else{
-      console.log("sei più lento!")
-      executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
-      executePlayerTurn(attacker, defencer, playerStats, enemyStats, selectedMove)
-      checkIfAlive(attacker, defencer)
-    }
-    
-    
-  }
-
-  function executePlayerTurn(player, enemy, playerStats, enemyStats, selectedMove){
-    console.log(player.data.name, "deals", trueDmgCalculator(player, playerStats, enemyStats, selectedMove), "to", enemy.data.name, "using", selectedMove.name);
-    updateHp(enemy, "-", trueDmgCalculator(player, playerStats, enemyStats, selectedMove))
   }
 
   //fetcha qualcosa
@@ -185,12 +168,12 @@ function App() {
     }
     const moves = await Promise.all(promises)
 
-    if (target === "player"){
+    if (target === "player") {
       setPlayerMoveSet(moves)
-    }else{
+    } else {
       setEnemyMoveSet(moves)
     }
-    
+
     return moves
   }
 
@@ -198,46 +181,62 @@ function App() {
   async function initializeItems() {
     const potion = await fetchFromApi("item", "potion")
     potion.quantity = 5;
-    const hpPotion = new Items(potion,"You healed for", 20)
+    const hpPotion = new Items(potion, "You healed for", 20)
     setPlayerInv(hpPotion)
   }
 
   //------------fight system-------------
-  function handleFight(player, enemy) {
-    
+
+  function sendPlayerChoice(attacker, defencer, attackerMove, playerStats, enemyStats, enemyMoveSet) {
+    //controlla chi è più veloce
+    if (chechWhoFaster(playerStats, enemyStats)) {
+      console.log("sei più veloce!")
+      executePlayerTurn(attacker, defencer, playerStats, enemyStats, selectedMove)
+      executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
+      checkIfAlive(attacker, defencer)
+    } else {
+      console.log("sei più lento!")
+      executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
+      executePlayerTurn(attacker, defencer, playerStats, enemyStats, selectedMove)
+      checkIfAlive(attacker, defencer)
+    }
   }
 
-  function sendMove(pokemon, move){
-    console.log(pokemon?.data?.name, "use", move?.name)
-    
+  function executePlayerTurn(player, enemy, playerStats, enemyStats, selectedMove) {
+    console.log(player.data.name, "deals", trueDmgCalculator(player, playerStats, enemyStats, selectedMove), "to", enemy.data.name, "using", selectedMove.name);
+    updateHp(enemy, "-", trueDmgCalculator(player, playerStats, enemyStats, selectedMove))
   }
 
-  function enemyIa(enemy, player, enemyMoveSet,){
-
-  }
-
-
-  function executeEnemyTurn(enemy, player, enemyMoveSet, playerStats, enemyStats){
+  function executeEnemyTurn(enemy, player, enemyMoveSet, playerStats, enemyStats) {
     console.log(enemy?.data?.name, "deals", trueDmgCalculator(enemy, playerStats, enemyStats, enemyMoveSet[0]), "to", player.data.name, "using", enemyMoveSet[0].name);
     updateHp(player, "-", trueDmgCalculator(enemy, playerStats, enemyStats, enemyMoveSet[0]))
   }
 
-  function useMove(pokemon, selectedMove){
+  function handleFight(player, enemy) {
 
   }
 
-  function dealDmg(){
+
+  function enemyIa(enemy, player, enemyMoveSet,) {
 
   }
 
-  function checkIfAlive(player, enemy){
-    console.log("vita player: ", player.currentHp, "vita nemico: ", enemy.currentHp )
+
+  function checkIfAlive(player, enemy) {
+    console.log("vita player: ", player.currentHp, "vita nemico: ", enemy.currentHp)
+    if (player.currentHp <= 0) {
+      console.log("fine gioco!", player.data.name, "è esausto")
+      setIsGameOver(true);
+    }else if(enemy.currentHp <= 0){
+      console.log("fine gioco!", enemy.data.name, "è esausto")
+      incrementStage(1)
+    }
   }
 
-  function updateHp(pokemon, operator, ammount){
-    if(operator === "+"){
+  function updateHp(pokemon, operator, ammount) {
+    if (operator === "+") {
       pokemon.currentHp = pokemon.currentHp + ammount
-    }else{
+    } else {
       pokemon.currentHp = pokemon.currentHp - ammount
     }
   }
@@ -270,10 +269,10 @@ function App() {
 
   }
 
-  function incrementStage(){
-    setStage(stage + 1)
+  function incrementStage(n) {
+    setStage(stage + n)
   }
-  
+
 
   //----------utilities---------------
   // id casuale per randomizzare da 0 a un limite 
@@ -289,7 +288,7 @@ function App() {
     return obj
   }
 
-  function trueDmgCalculator(attacker, attackerStats, defenderStats, move){
+  function trueDmgCalculator(attacker, attackerStats, defenderStats, move) {
     const damage = ((((2 * attacker.level) / 5 + 2) * move.power * attackerStats.attack / defenderStats.defense) / 50) + 2
     return Math.floor(damage)
   }
@@ -301,16 +300,15 @@ function App() {
   console.log("player: ", player, "enemy: ", enemy);
   console.log("moveset del player", playerMoveSet);
   console.log("moveset del nemico", enemyMoveSet);
-  console.log("inventario",playerInv);
+  console.log("inventario", playerInv);
   handleFight(player, enemy);
- 
+
 
   return (
     <>
       <h1>Prova</h1>
       <div>{stage}</div>
-      <button onClick={incrementStage}>Aumenta stage</button>
-  
+
       <img src={player.data?.sprites.front_default} alt="" />
       <img src={enemy.data?.sprites.front_default} alt="" />
       {playerMoveSet.map(move => (
@@ -318,7 +316,7 @@ function App() {
           onClick={() => setSelectedMove(move)}
           key={move.id}
         >{move.name}</p>
-        
+
       ))}
       <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats, enemyMoveSet)}>Confirm</button>
       <p>Mossa attiva: {selectedMove?.name}</p>
