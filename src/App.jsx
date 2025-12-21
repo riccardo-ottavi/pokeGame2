@@ -170,13 +170,13 @@ function App() {
     
   }
 
-  function sendMove(player, move){
-    console.log()
+  function sendMove(pokemon, move){
+    console.log(pokemon?.data?.name, "use", move?.name)
   }
 
 
-  function executeEnemyTurn(){
-
+  function executeEnemyTurn(enemy, enemyMoveSet){
+    console.log("Turno nemico: ", enemy?.data?.name, "usa", enemyMoveSet[0]?.name)
   }
 
   function useMove(pokemon, selectedMove){
@@ -262,9 +262,9 @@ function App() {
         >{move.name}</p>
         
       ))}
-      <button onClick={sendMove}>Confirm</button>
+      <button onClick={sendMove(player, selectedMove)}>Confirm</button>
       <p>Mossa attiva: {selectedMove?.name}</p>
-      
+      <button onClick={executeEnemyTurn(enemy, enemyMoveSet)}>Esegui turno nemico</button>
     </>
   )
 }
