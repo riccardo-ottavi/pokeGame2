@@ -9,15 +9,13 @@ function App() {
 
   const [player, setPlayer] = useState({})
   const [playerStats, setPlayerStats] = useState({})
-
   const [enemy, setEnemy] = useState({})
   const [enemyStats, setEnemyStats] = useState({})
-
   const [playerMoveSet, setPlayerMoveSet] = useState([])
   const [enemyMoveSet, setEnemyMoveSet] = useState([])
-
   const [playerInv, setPlayerInv] = useState([])
 
+  const [selectedMove, setSelectedMove] = useState()
 
 
   //----------costanti---------------
@@ -172,12 +170,16 @@ function App() {
     
   }
 
+  function sendMove(player, move){
+    console.log()
+  }
+
 
   function executeEnemyTurn(){
 
   }
 
-  function useMove(){
+  function useMove(pokemon, selectedMove){
 
   }
 
@@ -254,8 +256,15 @@ function App() {
       <img src={player.data?.sprites.front_default} alt="" />
       <img src={enemy.data?.sprites.front_default} alt="" />
       {playerMoveSet.map(move => (
-        <p>{move.name}</p>
+        <p
+          onClick={() => setSelectedMove(move)}
+          key={move.id}
+        >{move.name}</p>
+        
       ))}
+      <button onClick={sendMove}>Confirm</button>
+      <p>Mossa attiva: {selectedMove?.name}</p>
+      
     </>
   )
 }
