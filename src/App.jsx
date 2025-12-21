@@ -262,9 +262,9 @@ function App() {
         >{move.name}</p>
         
       ))}
-      <button onClick={sendMove(player, selectedMove)}>Confirm</button>
+      <button onClick={() => sendMove(player, selectedMove)}>Confirm</button>
       <p>Mossa attiva: {selectedMove?.name}</p>
-      <button onClick={executeEnemyTurn(enemy, enemyMoveSet)}>Esegui turno nemico</button>
+      <button onClick={() => executeEnemyTurn(enemy, enemyMoveSet)}>Esegui turno nemico</button>
     </>
   )
 }
