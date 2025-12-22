@@ -231,9 +231,10 @@ function App() {
       const poke = await fetchFromApi("pokemon", pokeId);
 
       //inizializza le statistiche in base al livello (inizialmente 5)
-      const enemyStats = new Stats(poke.stats, 5);
+      const enemyLevel = getEnemyLevel(stage)
+      const enemyStats = new Stats(poke.stats, enemyLevel);
 
-      const instanciatedEnemy = new PokemonInstance(pokeId, 5, enemyStats.hp, enemyStats.hp, null, poke, 0);
+      const instanciatedEnemy = new PokemonInstance(pokeId, getEnemyLevel(stage), enemyStats.hp, enemyStats.hp, null, poke, 0);
       setEnemy(instanciatedEnemy)
       setEnemyStats(enemyStats)
       initializeMoveset(instanciatedEnemy, 4, "enemy")
@@ -436,20 +437,24 @@ function App() {
   }
 
   function trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender) {
-  const baseDamage =
-    (((((2 * attacker.level) / 5 + 2) * move.power *
-      attackerStats.attack / defenderStats.defense) / 50) + 2);
+    const baseDamage =
+      (((((2 * attacker.level) / 5 + 2) * move.power *
+        attackerStats.attack / defenderStats.defense) / 50) + 2);
 
-  const modifier = evaluateModifiers(
-    attackerStats,
-    defenderStats,
-    move,
-    attacker,
-    defender
-  );
+    const modifier = evaluateModifiers(
+      attackerStats,
+      defenderStats,
+      move,
+      attacker,
+      defender
+    );
 
-  return Math.floor(baseDamage * modifier);
-}
+    return Math.floor(baseDamage * modifier);
+  }
+  //funzione che bilancia il gioco
+  function getEnemyLevel(stage) {
+    return 3 + stage; 
+  }
 
   //main(---tests----)
   //runGame()
