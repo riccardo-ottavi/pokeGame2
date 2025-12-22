@@ -435,6 +435,9 @@ useEffect(() => {
       return dmgMoltiplier *= 1.5
     }
 
+    
+    
+
     const moveType = move.type?.name;
     const defenderTypes = defender.data.types.map(t => t.type.name);
     console.log("tipo mossa: ", moveType);
@@ -442,6 +445,12 @@ useEffect(() => {
 
     const thisEfficacies = typesEfficacy.find(t => t.type === moveType);
     if (!thisEfficacies) return dmgMoltiplier;
+
+    //verifica se la mossa è STAB
+    const attackerTypes = attacker.data.types.map(t => t.type.name);
+    if (attackerTypes.includes(moveType)){
+      console.log("E' STAB!");
+    }
 
     defenderTypes.forEach(defType => {
       if (thisEfficacies.noEff.includes(defType)) {
@@ -538,6 +547,7 @@ useEffect(() => {
   }
 
   function trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender) {
+
     const baseDamage =
       (((((2 * attacker.level) / 5 + 2) * move.power *
         attackerStats.attack / defenderStats.defense) / 50) + 2);
