@@ -321,11 +321,22 @@ function App() {
 
   function evaluateModifiers(attackerStats, defenderStats, move, attacker, defender) {
     let dmgMoltiplier = 1;
+
+
+    //verifica se la mossa fallisce
     const random = generateRandomId(100);
     if (random >= move.accuracy) {
       console.log("la mossa fallisce!")
       return 0
     }
+
+    //verifica se la mossa fa brutto colpo
+    const random2 = generateRandomId(16);
+    if (random2 <= 1) {
+      console.log("Brutto colpo!")
+      return dmgMoltiplier * 1,5
+    }
+
     const moveType = move.type.name;
     const defenderTypes = defender.data.types.map(t => t.type.name);
     console.log("tipo mossa: ", moveType);
