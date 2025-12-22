@@ -22,116 +22,116 @@ function App() {
   const idLimit = 1000;
 
   const typesEfficacy = [
-  {
-    type: "normal",
-    super: [],
-    notVery: ["rock", "steel"],
-    noEff: ["ghost"]
-  },
-  {
-    type: "fire",
-    super: ["grass", "ice", "bug", "steel"],
-    notVery: ["fire", "water", "rock", "dragon"],
-    noEff: []
-  },
-  {
-    type: "water",
-    super: ["fire", "ground", "rock"],
-    notVery: ["water", "grass", "dragon"],
-    noEff: []
-  },
-  {
-    type: "electric",
-    super: ["water", "flying"],
-    notVery: ["electric", "grass", "dragon"],
-    noEff: ["ground"]
-  },
-  {
-    type: "grass",
-    super: ["water", "ground", "rock"],
-    notVery: ["fire", "grass", "poison", "flying", "bug", "dragon", "steel"],
-    noEff: []
-  },
-  {
-    type: "ice",
-    super: ["grass", "ground", "flying", "dragon"],
-    notVery: ["fire", "water", "ice", "steel"],
-    noEff: []
-  },
-  {
-    type: "fighting",
-    super: ["normal", "ice", "rock", "dark", "steel"],
-    notVery: ["poison", "flying", "psychic", "bug", "fairy"],
-    noEff: ["ghost"]
-  },
-  {
-    type: "poison",
-    super: ["grass", "fairy"],
-    notVery: ["poison", "ground", "rock", "ghost"],
-    noEff: ["steel"]
-  },
-  {
-    type: "ground",
-    super: ["fire", "electric", "poison", "rock", "steel"],
-    notVery: ["grass", "bug"],
-    noEff: ["flying"]
-  },
-  {
-    type: "flying",
-    super: ["grass", "fighting", "bug"],
-    notVery: ["electric", "rock", "steel"],
-    noEff: []
-  },
-  {
-    type: "psychic",
-    super: ["fighting", "poison"],
-    notVery: ["psychic", "steel"],
-    noEff: ["dark"]
-  },
-  {
-    type: "bug",
-    super: ["grass", "psychic", "dark"],
-    notVery: ["fire", "fighting", "poison", "flying", "ghost", "steel", "fairy"],
-    noEff: []
-  },
-  {
-    type: "rock",
-    super: ["fire", "ice", "flying", "bug"],
-    notVery: ["fighting", "ground", "steel"],
-    noEff: []
-  },
-  {
-    type: "ghost",
-    super: ["psychic", "ghost"],
-    notVery: ["dark"],
-    noEff: ["normal"]
-  },
-  {
-    type: "dragon",
-    super: ["dragon"],
-    notVery: ["steel"],
-    noEff: ["fairy"]
-  },
-  {
-    type: "dark",
-    super: ["psychic", "ghost"],
-    notVery: ["fighting", "dark", "fairy"],
-    noEff: []
-  },
-  {
-    type: "steel",
-    super: ["ice", "rock", "fairy"],
-    notVery: ["fire", "water", "electric", "steel"],
-    noEff: []
-  },
-  {
-    type: "fairy",
-    super: ["fighting", "dragon", "dark"],
-    notVery: ["fire", "poison", "steel"],
-    noEff: []
-  }
-];
-  
+    {
+      type: "normal",
+      super: [],
+      notVery: ["rock", "steel"],
+      noEff: ["ghost"]
+    },
+    {
+      type: "fire",
+      super: ["grass", "ice", "bug", "steel"],
+      notVery: ["fire", "water", "rock", "dragon"],
+      noEff: []
+    },
+    {
+      type: "water",
+      super: ["fire", "ground", "rock"],
+      notVery: ["water", "grass", "dragon"],
+      noEff: []
+    },
+    {
+      type: "electric",
+      super: ["water", "flying"],
+      notVery: ["electric", "grass", "dragon"],
+      noEff: ["ground"]
+    },
+    {
+      type: "grass",
+      super: ["water", "ground", "rock"],
+      notVery: ["fire", "grass", "poison", "flying", "bug", "dragon", "steel"],
+      noEff: []
+    },
+    {
+      type: "ice",
+      super: ["grass", "ground", "flying", "dragon"],
+      notVery: ["fire", "water", "ice", "steel"],
+      noEff: []
+    },
+    {
+      type: "fighting",
+      super: ["normal", "ice", "rock", "dark", "steel"],
+      notVery: ["poison", "flying", "psychic", "bug", "fairy"],
+      noEff: ["ghost"]
+    },
+    {
+      type: "poison",
+      super: ["grass", "fairy"],
+      notVery: ["poison", "ground", "rock", "ghost"],
+      noEff: ["steel"]
+    },
+    {
+      type: "ground",
+      super: ["fire", "electric", "poison", "rock", "steel"],
+      notVery: ["grass", "bug"],
+      noEff: ["flying"]
+    },
+    {
+      type: "flying",
+      super: ["grass", "fighting", "bug"],
+      notVery: ["electric", "rock", "steel"],
+      noEff: []
+    },
+    {
+      type: "psychic",
+      super: ["fighting", "poison"],
+      notVery: ["psychic", "steel"],
+      noEff: ["dark"]
+    },
+    {
+      type: "bug",
+      super: ["grass", "psychic", "dark"],
+      notVery: ["fire", "fighting", "poison", "flying", "ghost", "steel", "fairy"],
+      noEff: []
+    },
+    {
+      type: "rock",
+      super: ["fire", "ice", "flying", "bug"],
+      notVery: ["fighting", "ground", "steel"],
+      noEff: []
+    },
+    {
+      type: "ghost",
+      super: ["psychic", "ghost"],
+      notVery: ["dark"],
+      noEff: ["normal"]
+    },
+    {
+      type: "dragon",
+      super: ["dragon"],
+      notVery: ["steel"],
+      noEff: ["fairy"]
+    },
+    {
+      type: "dark",
+      super: ["psychic", "ghost"],
+      notVery: ["fighting", "dark", "fairy"],
+      noEff: []
+    },
+    {
+      type: "steel",
+      super: ["ice", "rock", "fairy"],
+      notVery: ["fire", "water", "electric", "steel"],
+      noEff: []
+    },
+    {
+      type: "fairy",
+      super: ["fighting", "dragon", "dark"],
+      notVery: ["fire", "poison", "steel"],
+      noEff: []
+    }
+  ];
+
   //----------classi---------------
 
   //inizializza classe per istanziare i pokemon effettivamente in gioco
@@ -148,7 +148,7 @@ function App() {
   }
 
   class Modifiers {
-    constructor(attacker, defender, move){
+    constructor(attacker, defender, move) {
       this.attacker = attacker;
       this.defender = defender;
       this.move = move;
@@ -201,7 +201,7 @@ function App() {
     handleProgression();
   }, [])
 
-   useEffect(() => {
+  useEffect(() => {
     instancePokemon("enemy");
     setNewStage()
   }, [stage])
@@ -296,7 +296,7 @@ function App() {
     }
   }
 
-  function setNewStage(){
+  function setNewStage() {
     console.log("iniziamo il round", stage)
   }
 
@@ -305,31 +305,36 @@ function App() {
   }
 
   function executeEnemyTurn(enemy, player, enemyMoveSet, defenderStats, enemyStats) {
-    useMove(enemy, enemyMoveSet[0], player, enemyStats, defenderStats )
+    useMove(enemy, enemyMoveSet[0], player, enemyStats, defenderStats)
   }
-  function useMove(attacker, move, defender, attackerStats, defenderStats){
-    if (move.power === null){
+  function useMove(attacker, move, defender, attackerStats, defenderStats) {
+    if (move.power === null) {
       console.log("la mossa non fa danno!")
       return
-    }else{
+    } else {
       console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender), "to", defender.data.name, "using", move.name);
-      updateHp(defender, "-", trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender))
+      updateHp(defender === player ? "player" : "enemy", "-", trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender))
     }
   }
-  
-  function evaluateModifiers(attackerStats, defenderStats,  move, attacker, defender){
+
+  function evaluateModifiers(attackerStats, defenderStats, move, attacker, defender) {
     let dmgMoltiplier = 1;
     console.log("precisione mossa", move.accuracy)
     const random = generateRandomId(100);
-    if(random > move.accuracy){
+    if (random > move.accuracy) {
       console.log("la mossa fallisce!")
-      return
+      return 0
     }
+    const moveType = move.type.name;
+    const defenderTypes = defender.data.types.map(t => t.type.name);
+    console.log("tipo mossa: ", moveType);
+    defenderTypes.forEach(tipo => console.log("tipi difensore: ", tipo))
+
 
     return dmgMoltiplier
   }
 
-  
+
   function enemyIa(enemy, player, enemyMoveSet,) {
 
   }
@@ -342,20 +347,28 @@ function App() {
       //riavvia il gioco
       handleProgression();
       setStage(1);
-    }else if(enemy.currentHp <= 0){
+    } else if (enemy.currentHp <= 0) {
       console.log("Complimenti!", enemy.data.name, "è esausto")
       //lascia che lo stage prosegua inizializzando
       incrementStage(1)
     }
   }
 
-  function updateHp(pokemon, operator, ammount) {
-    if (operator === "+") {
-      pokemon.currentHp = pokemon.currentHp + ammount
-    } else {
-      pokemon.currentHp = pokemon.currentHp - ammount
-    }
-  }
+  function updateHp(target, operator, amount) {
+  const setter = target === "player" ? setPlayer : setEnemy;
+
+  setter(prev => {
+    const newHp =
+      operator === "+"
+        ? prev.currentHp + amount
+        : prev.currentHp - amount;
+
+    return {
+      ...prev,
+      currentHp: Math.max(0, Math.min(prev.maxHp, newHp))
+    };
+  });
+}
 
   //se il player è più veloce ritorna true
   function chechWhoFaster(playerStats, enemyStats) {
@@ -405,7 +418,7 @@ function App() {
   }
 
   function trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender) {
-    const damage = ((((2 * attacker.level) / 5 + 2) * move.power * attackerStats.attack / defenderStats.defense) / 50) + 2 * evaluateModifiers(attackerStats, defenderStats,  move, attacker, defender)
+    const damage = ((((2 * attacker.level) / 5 + 2) * move.power * attackerStats.attack / defenderStats.defense) / 50) + 2 * evaluateModifiers(attackerStats, defenderStats, move, attacker, defender)
     return Math.floor(damage)
   }
 
