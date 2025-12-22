@@ -8,8 +8,10 @@ function App() {
 
   const [player, setPlayer] = useState({})
   const [playerStats, setPlayerStats] = useState({})
+  const [isPlayerAlive, setIsPlayerAlive] = useState(true)
   const [enemy, setEnemy] = useState({})
   const [enemyStats, setEnemyStats] = useState({})
+  const [isEnemyAlive, setIsEnemAlive] = useState(true)
   const [playerMoveSet, setPlayerMoveSet] = useState([])
   const [enemyMoveSet, setEnemyMoveSet] = useState([])
   const [playerInv, setPlayerInv] = useState([])
@@ -199,7 +201,7 @@ function App() {
     }
   }
 
-  //test
+  //effetti
   useEffect(() => {
     handleProgression();
   }, [])
@@ -208,6 +210,24 @@ function App() {
     instancePokemon("enemy");
     setNewStage()
   }, [stage])
+
+  useEffect(() => {
+  if (player.currentHp <= 0) {
+    console.log("fine gioco!", player.data.name, "è esausto");
+    setIsPlayerAlive(false);
+    setIsGameOver(true);
+    handleProgression();
+    setStage(1);
+  }
+}, [player.currentHp]);
+
+useEffect(() => {
+  if (enemy.currentHp <= 0) {
+    console.log("Complimenti!", enemy.data.name, "è esausto");
+    setIsEnemAlive(false);
+    incrementStage(1);
+  }
+}, [enemy.currentHp]);
 
   //----------inizializzazioni---------------
 
@@ -308,7 +328,6 @@ function App() {
   function executePlayerTurn(player, enemy, playerStats, enemyStats, move) {
     if (!move) return;
     useMove(player, move, enemy, playerStats, enemyStats);
-    checkIfAlive(player, enemy);
   }
 
   function executeEnemyTurn(enemy, player, enemyMoveSet, defenderStats, enemyStats) {
@@ -316,13 +335,18 @@ function App() {
   }
 
   function useMove(attacker, move, defender, attackerStats, defenderStats) {
-    //controlli validità mossa
-    if (move.isItem) {
-      console.log("Hai usato l' oggetto: ", move.name);
-    }
+
     if (!move) return;
     if (attacker.currentHp <= 0) return;
 
+    //controlli validità mossa
+    if (move.isItem) {
+      //qui sei sicuro che haai inviato un oggetto
+      useItem(move)
+      
+      return
+    }
+    
     if (move.power == null) {
       console.log("La mossa", move.name, "non fa danno!");
       return;
@@ -396,11 +420,13 @@ function App() {
     console.log("vita player: ", player.currentHp, "vita nemico: ", enemy.currentHp)
     if (player.currentHp <= 0) {
       console.log("fine gioco!", player.data.name, "è esausto")
+      setIsPlayerAlive(false);
       setIsGameOver(true);
       //riavvia il gioco
       handleProgression();
       setStage(1);
     } else if (enemy.currentHp <= 0) {
+      setIsEnemAlive(false);
       console.log("Complimenti!", enemy.data.name, "è esausto")
       //lascia che lo stage prosegua inizializzando
       incrementStage(1)
@@ -432,7 +458,8 @@ function App() {
   }
 
   function useItem(item) {
-
+    console.log("Hai usato l' oggetto: ", item.name);
+    updateHp("player", "+", item.healing);
   }
 
   //----------progressione---------------
