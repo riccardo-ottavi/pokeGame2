@@ -195,6 +195,7 @@ function App() {
       this.outcomeText = outcomeText;
       this.healing = healing;
       this.name = this.data.name;
+      this.isItem = true;
     }
   }
 
@@ -287,22 +288,15 @@ function App() {
   function sendPlayerChoice(attacker, defencer, attackerMove, playerStats, enemyStats, enemyMoveSet) {
     //controlla chi è più veloce
     if (chechWhoFaster(playerStats, enemyStats)) {
-      if(selectedMove instanceof Items){
-      console.log("hai usato un oggetto!");
-      return
-    }
       console.log("sei più veloce!")
-      executePlayerTurn(attacker, defencer, playerStats, enemyStats, selectedMove)
+      executePlayerTurn(attacker, defencer, playerStats, enemyStats, attackerMove)
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
       checkIfAlive(attacker, defencer)
-    } else {
-      if(selectedMove instanceof Items){
-      console.log("hai usato un oggetto!");
-      return
     }
+    else {
       console.log("sei più lento!")
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
-      executePlayerTurn(attacker, defencer, playerStats, enemyStats, selectedMove)
+      executePlayerTurn(attacker, defencer, playerStats, enemyStats, attackerMove)
       checkIfAlive(attacker, defencer)
     }
   }
@@ -311,33 +305,44 @@ function App() {
     console.log("iniziamo il round", stage)
   }
 
-  function executePlayerTurn(player, enemy, playerStats, enemyStats, selectedMove) {
-    if(selectedMove instanceof Items){
-      console.log("hai usato un oggetto!");
-      return
-    }
-    useMove(player, selectedMove, enemy, playerStats, enemyStats)
-    checkIfAlive(player, enemy)
+  function executePlayerTurn(player, enemy, playerStats, enemyStats, move) {
+    if (!move) return;
+    useMove(player, move, enemy, playerStats, enemyStats);
+    checkIfAlive(player, enemy);
   }
 
   function executeEnemyTurn(enemy, player, enemyMoveSet, defenderStats, enemyStats) {
     useMove(enemy, enemyMoveSet[0], player, enemyStats, defenderStats)
   }
+
   function useMove(attacker, move, defender, attackerStats, defenderStats) {
     //controlli validità mossa
-    //è vivo?
+    if (move.isItem) {
+      console.log("Hai usato l' oggetto: ", move.name);
+    }
+    if (!move) return;
     if (attacker.currentHp <= 0) return;
-    if(move instanceof Items){
-      console.log("hai usato un oggetto!");
-      return
+
+    if (move.power == null) {
+      console.log("La mossa", move.name, "non fa danno!");
+      return;
     }
-    if (move.power === null) {
-      console.log("la mossa", move.name, "non fa danno!")
-      return
-    } else {
-      console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender), "to", defender.data.name, "using", move.name);
-      updateHp(defender === player ? "player" : "enemy", "-", trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender))
-    }
+
+    console.log(
+      attacker.data.name,
+      "deals",
+      trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender),
+      "to",
+      defender.data.name,
+      "using",
+      move.name
+    );
+
+    updateHp(
+      defender === player ? "player" : "enemy",
+      "-",
+      trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender)
+    );
   }
 
   function evaluateModifiers(attackerStats, defenderStats, move, attacker, defender) {
