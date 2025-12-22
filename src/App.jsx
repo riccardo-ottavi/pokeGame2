@@ -193,7 +193,8 @@ function App() {
     constructor(data, outcomeText, healing) {
       this.data = data;
       this.outcomeText = outcomeText;
-      this.healing = healing
+      this.healing = healing;
+      this.name = this.data.name;
     }
   }
 
@@ -278,7 +279,7 @@ function App() {
     const potion = await fetchFromApi("item", "potion")
     potion.quantity = 5;
     const hpPotion = new Items(potion, "You healed for", 20)
-    setPlayerInv(hpPotion)
+    setPlayerInv([hpPotion])
   }
 
   //------------fight system-------------
@@ -286,11 +287,19 @@ function App() {
   function sendPlayerChoice(attacker, defencer, attackerMove, playerStats, enemyStats, enemyMoveSet) {
     //controlla chi è più veloce
     if (chechWhoFaster(playerStats, enemyStats)) {
+      if(selectedMove instanceof Items){
+      console.log("hai usato un oggetto!");
+      return
+    }
       console.log("sei più veloce!")
       executePlayerTurn(attacker, defencer, playerStats, enemyStats, selectedMove)
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
       checkIfAlive(attacker, defencer)
     } else {
+      if(selectedMove instanceof Items){
+      console.log("hai usato un oggetto!");
+      return
+    }
       console.log("sei più lento!")
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
       executePlayerTurn(attacker, defencer, playerStats, enemyStats, selectedMove)
@@ -303,16 +312,27 @@ function App() {
   }
 
   function executePlayerTurn(player, enemy, playerStats, enemyStats, selectedMove) {
+    if(selectedMove instanceof Items){
+      console.log("hai usato un oggetto!");
+      return
+    }
     useMove(player, selectedMove, enemy, playerStats, enemyStats)
+    checkIfAlive(player, enemy)
   }
 
   function executeEnemyTurn(enemy, player, enemyMoveSet, defenderStats, enemyStats) {
     useMove(enemy, enemyMoveSet[0], player, enemyStats, defenderStats)
   }
   function useMove(attacker, move, defender, attackerStats, defenderStats) {
+    //controlli validità mossa
+    //è vivo?
     if (attacker.currentHp <= 0) return;
+    if(move instanceof Items){
+      console.log("hai usato un oggetto!");
+      return
+    }
     if (move.power === null) {
-      console.log("la mossa non fa danno!")
+      console.log("la mossa", move.name, "non fa danno!")
       return
     } else {
       console.log(attacker.data.name, "deals", trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender), "to", defender.data.name, "using", move.name);
@@ -335,10 +355,10 @@ function App() {
     const random2 = generateRandomId(16);
     if (random2 <= 1) {
       console.log("Brutto colpo!")
-      return dmgMoltiplier * 1,5
+      return dmgMoltiplier *= 1.5
     }
 
-    const moveType = move.type.name;
+    const moveType = move.type?.name;
     const defenderTypes = defender.data.types.map(t => t.type.name);
     console.log("tipo mossa: ", moveType);
     defenderTypes.forEach(tipo => console.log("tipi difensore: ", tipo))
@@ -465,7 +485,7 @@ function App() {
   }
   //funzione che bilancia il gioco
   function getEnemyLevel(stage) {
-    return 3 + stage; 
+    return 3 + stage;
   }
 
   //main(---tests----)
@@ -486,6 +506,13 @@ function App() {
           key={move.id}
         >{move.name}</p>
 
+      ))}
+      {playerInv.map(item => (
+        <p
+          onClick={() => setSelectedMove(item)}
+          key={item.data.id}
+        >{item.name}
+        </p>
       ))}
       <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats, enemyMoveSet)}>Confirm</button>
       <p>Mossa attiva: {selectedMove?.name}</p>
