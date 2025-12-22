@@ -209,7 +209,7 @@ function App() {
   useEffect(() => {
     instancePokemon("enemy");
     if(stage !== 1){
-      generateReward(enemy, stage);
+      generateReward(stage, enemy, player);
     }
   }, [stage])
 
@@ -472,10 +472,23 @@ useEffect(() => {
   }
 
   //qua puoi bilanciare il gioco aumentando l'exp data dai nemici
-  function generateReward(stage, beatenEnemy) {
-    const finalReward = beatenEnemy.base_experience * (1 + stage / 4);
-    console.log("ottieni", finalReward, "exp")
+  function generateReward(stage, beatenEnemy, player) {
+    console.log(stage)
+    console.log(beatenEnemy)
+    const finalReward = beatenEnemy.data.base_experience * (1 + stage / 4);
+    console.log("ottieni", finalReward, "exp");
+    player.exp = finalReward
+    checkLevelUp(player)
+
     return finalReward
+  }
+
+  function checkLevelUp(player){
+    if(player.exp >= player.expToNextLevel){
+      console.log("hai livellato!");
+      player.level = player.level + 1
+      player.exp = player.exp - player.expToNextLevel;
+    }
   }
 
   function renderRunRecap(player, enemy, stage) {
