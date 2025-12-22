@@ -308,6 +308,7 @@ function App() {
     useMove(enemy, enemyMoveSet[0], player, enemyStats, defenderStats)
   }
   function useMove(attacker, move, defender, attackerStats, defenderStats) {
+    if (attacker.currentHp <= 0) return;
     if (move.power === null) {
       console.log("la mossa non fa danno!")
       return
@@ -319,9 +320,8 @@ function App() {
 
   function evaluateModifiers(attackerStats, defenderStats, move, attacker, defender) {
     let dmgMoltiplier = 1;
-    console.log("precisione mossa", move.accuracy)
     const random = generateRandomId(100);
-    if (random > move.accuracy) {
+    if (random >= move.accuracy) {
       console.log("la mossa fallisce!")
       return 0
     }
@@ -330,6 +330,21 @@ function App() {
     console.log("tipo mossa: ", moveType);
     defenderTypes.forEach(tipo => console.log("tipi difensore: ", tipo))
 
+    const thisEfficacies = typesEfficacy.find(t => t.type === moveType);
+    if (!thisEfficacies) return dmgMoltiplier;
+
+    defenderTypes.forEach(defType => {
+      if (thisEfficacies.noEff.includes(defType)) {
+        console.log("Non ha effetto!");
+        dmgMoltiplier *= 0;
+      } else if (thisEfficacies.super.includes(defType)) {
+        console.log("È superefficace!");
+        dmgMoltiplier *= 2;
+      } else if (thisEfficacies.notVery.includes(defType)) {
+        console.log("Non è molto efficace...");
+        dmgMoltiplier *= 0.5;
+      }
+    });
 
     return dmgMoltiplier
   }
@@ -355,20 +370,19 @@ function App() {
   }
 
   function updateHp(target, operator, amount) {
-  const setter = target === "player" ? setPlayer : setEnemy;
+    const setter = target === "player" ? setPlayer : setEnemy;
+    setter(prev => {
+      const newHp =
+        operator === "+"
+          ? prev.currentHp + amount
+          : prev.currentHp - amount;
 
-  setter(prev => {
-    const newHp =
-      operator === "+"
-        ? prev.currentHp + amount
-        : prev.currentHp - amount;
-
-    return {
-      ...prev,
-      currentHp: Math.max(0, Math.min(prev.maxHp, newHp))
-    };
-  });
-}
+      return {
+        ...prev,
+        currentHp: Math.max(0, Math.min(prev.maxHp, newHp))
+      };
+    });
+  }
 
   //se il player è più veloce ritorna true
   function chechWhoFaster(playerStats, enemyStats) {
@@ -386,9 +400,9 @@ function App() {
   //----------progressione---------------
 
   //genera la progressione in rapporto agli stage 
-  function handleProgression() {
-    instancePokemon("player");
-    instancePokemon("enemy");
+  async function handleProgression() {
+    await instancePokemon("player");
+    await instancePokemon("enemy");
   }
 
   function generateNewFight(stage) {
@@ -396,6 +410,10 @@ function App() {
   }
 
   function handleReward(stage) {
+
+  }
+
+  function renderRunRecap(player, enemy, stage) {
 
   }
 
@@ -418,9 +436,20 @@ function App() {
   }
 
   function trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender) {
-    const damage = ((((2 * attacker.level) / 5 + 2) * move.power * attackerStats.attack / defenderStats.defense) / 50) + 2 * evaluateModifiers(attackerStats, defenderStats, move, attacker, defender)
-    return Math.floor(damage)
-  }
+  const baseDamage =
+    (((((2 * attacker.level) / 5 + 2) * move.power *
+      attackerStats.attack / defenderStats.defense) / 50) + 2);
+
+  const modifier = evaluateModifiers(
+    attackerStats,
+    defenderStats,
+    move,
+    attacker,
+    defender
+  );
+
+  return Math.floor(baseDamage * modifier);
+}
 
   //main(---tests----)
   //runGame()
