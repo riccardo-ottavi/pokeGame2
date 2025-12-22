@@ -208,7 +208,9 @@ function App() {
 
   useEffect(() => {
     instancePokemon("enemy");
-    setNewStage()
+    if(stage !== 1){
+      generateReward(enemy, stage);
+    }
   }, [stage])
 
   useEffect(() => {
@@ -321,10 +323,6 @@ useEffect(() => {
     }
   }
 
-  function setNewStage() {
-    console.log("iniziamo il round", stage)
-  }
-
   function executePlayerTurn(player, enemy, playerStats, enemyStats, move) {
     if (!move) return;
     useMove(player, move, enemy, playerStats, enemyStats);
@@ -417,7 +415,6 @@ useEffect(() => {
   }
 
   function checkIfAlive(player, enemy) {
-    console.log("vita player: ", player.currentHp, "vita nemico: ", enemy.currentHp)
     if (player.currentHp <= 0) {
       console.log("fine gioco!", player.data.name, "è esausto")
       setIsPlayerAlive(false);
@@ -474,8 +471,11 @@ useEffect(() => {
 
   }
 
-  function handleReward(stage) {
-
+  //qua puoi bilanciare il gioco aumentando l'exp data dai nemici
+  function generateReward(stage, beatenEnemy) {
+    const finalReward = beatenEnemy.base_experience * (1 + stage / 4);
+    console.log("ottieni", finalReward, "exp")
+    return finalReward
   }
 
   function renderRunRecap(player, enemy, stage) {
