@@ -144,6 +144,7 @@ function App() {
       this.status = status;
       this.data = data;
       this.exp = exp;
+      this.expToNextLevel = Math.pow(this.level, 3);
     }
   }
 
@@ -323,14 +324,14 @@ function App() {
     let dmgMoltiplier = 1;
 
 
-    //verifica se la mossa fallisce
+    //verifica se la mossa fallisce doMovesFail()
     const random = generateRandomId(100);
     if (random >= move.accuracy) {
       console.log("la mossa fallisce!")
       return 0
     }
 
-    //verifica se la mossa fa brutto colpo
+    //verifica se la mossa fa brutto colpo isCritical()
     const random2 = generateRandomId(16);
     if (random2 <= 1) {
       console.log("Brutto colpo!")
