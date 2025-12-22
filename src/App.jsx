@@ -207,34 +207,45 @@ function App() {
   }, [])
 
   useEffect(() => {
-    instancePokemon("enemy");
-    if(stage !== 1){
-      generateReward(stage, enemy, player);
+    if (stage !== 1 && enemy.data && player.data) {
+      
     }
-  }, [stage])
+  }, [stage]);
 
-  useEffect(() => {
+  // Player muore → Game Over, niente spawn di enemy
+useEffect(() => {
   if (player.currentHp <= 0) {
     console.log("fine gioco!", player.data.name, "è esausto");
     setIsPlayerAlive(false);
     setIsGameOver(true);
-    handleProgression();
-    setStage(1);
   }
 }, [player.currentHp]);
 
+// Enemy muore → incrementa stage e spawn nuovo nemico
 useEffect(() => {
   if (enemy.currentHp <= 0) {
     console.log("Complimenti!", enemy.data.name, "è esausto");
     setIsEnemAlive(false);
+    generateReward(stage, enemy, player);
+    const newStage = stage + 1;
     incrementStage(1);
+    spawnNewEnemy(newStage);
   }
 }, [enemy.currentHp]);
+
+useEffect(() => {
+  if (!player.exp) return;
+
+  if (player.exp >= player.expToNextLevel) {
+    const bonusExp = player.exp - player.expToNextLevel;
+    instanciatePoke(player, player.level + 1, bonusExp);
+  }
+}, [player.exp]);
 
   //----------inizializzazioni---------------
 
   //inizializza player e nemico con this. e gli aggiunge proprietà items e moveset
-  async function instancePokemon(target) {
+  async function firstInstancePokemon(target) {
     //capisci se stai impostando player o enemy e assegna pokemon fetchato allo stato 
     if (target === "player") {
       //istanzia un pokemon a caso
@@ -266,11 +277,50 @@ useEffect(() => {
     }
   }
 
+  function instanciatePoke(playerInstance, level, bonusExp) {
+    const pokeData = playerInstance.data;
+    if (!pokeData || !pokeData.stats) return;  
+    const playerStats = new Stats(pokeData.stats, level);
+    const instanciatedPlayer = new PokemonInstance(
+      pokeData.id,
+      level,
+      playerStats.hp,
+      playerStats.hp,
+      null,
+      pokeData,
+      bonusExp
+    );
+    setPlayer(instanciatedPlayer);
+    setPlayerStats(playerStats);
+  }
+
   //fetcha qualcosa
   async function fetchFromApi(category, id) {
     const requestedPromise = await fetchJson(`${baseUrl}${category}/${id}`)
     return requestedPromise
   }
+
+  async function spawnNewEnemy(newStage) {
+  const pokeId = generateRandomId(idLimit);
+  const poke = await fetchFromApi("pokemon", pokeId);
+  const enemyLevel = getEnemyLevel(newStage);
+  const enemyStats = new Stats(poke.stats, enemyLevel);
+
+  const newEnemy = new PokemonInstance(
+    pokeId,
+    enemyLevel,
+    enemyStats.hp,
+    enemyStats.hp,
+    null,
+    poke,
+    0
+  );
+
+  setEnemy(newEnemy);
+  setEnemyStats(enemyStats);
+  setIsEnemAlive(true);
+  initializeMoveset(newEnemy, 4, "enemy");
+}
 
   //inizializza il moveset 
   async function initializeMoveset(pokemon, movesNumber, target) {
@@ -313,13 +363,13 @@ useEffect(() => {
       console.log("sei più veloce!")
       executePlayerTurn(attacker, defencer, playerStats, enemyStats, attackerMove)
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
-      checkIfAlive(attacker, defencer)
+     
     }
     else {
       console.log("sei più lento!")
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
       executePlayerTurn(attacker, defencer, playerStats, enemyStats, attackerMove)
-      checkIfAlive(attacker, defencer)
+      
     }
   }
 
@@ -341,10 +391,10 @@ useEffect(() => {
     if (move.isItem) {
       //qui sei sicuro che haai inviato un oggetto
       useItem(move)
-      
+
       return
     }
-    
+
     if (move.power == null) {
       console.log("La mossa", move.name, "non fa danno!");
       return;
@@ -414,22 +464,6 @@ useEffect(() => {
 
   }
 
-  function checkIfAlive(player, enemy) {
-    if (player.currentHp <= 0) {
-      console.log("fine gioco!", player.data.name, "è esausto")
-      setIsPlayerAlive(false);
-      setIsGameOver(true);
-      //riavvia il gioco
-      handleProgression();
-      setStage(1);
-    } else if (enemy.currentHp <= 0) {
-      setIsEnemAlive(false);
-      console.log("Complimenti!", enemy.data.name, "è esausto")
-      //lascia che lo stage prosegua inizializzando
-      incrementStage(1)
-    }
-  }
-
   function updateHp(target, operator, amount) {
     const setter = target === "player" ? setPlayer : setEnemy;
     setter(prev => {
@@ -463,8 +497,8 @@ useEffect(() => {
 
   //genera la progressione in rapporto agli stage 
   async function handleProgression() {
-    await instancePokemon("player");
-    await instancePokemon("enemy");
+    await firstInstancePokemon("player");
+    await firstInstancePokemon("enemy");
   }
 
   function generateNewFight(stage) {
@@ -473,30 +507,20 @@ useEffect(() => {
 
   //qua puoi bilanciare il gioco aumentando l'exp data dai nemici
   function generateReward(stage, beatenEnemy, player) {
-    console.log(stage)
-    console.log(beatenEnemy)
-    const finalReward = beatenEnemy.data.base_experience * (1 + stage / 4);
-    console.log("ottieni", finalReward, "exp");
-    player.exp = finalReward
-    checkLevelUp(player)
-
-    return finalReward
-  }
-
-  function checkLevelUp(player){
-    if(player.exp >= player.expToNextLevel){
-      console.log("hai livellato!");
-      player.level = player.level + 1
-      player.exp = player.exp - player.expToNextLevel;
-    }
-  }
-
+  const finalReward = beatenEnemy.data.base_experience * (1 + stage / 4);
+  setPlayer(prev => {
+    const newExp = prev.exp + finalReward;
+    return { ...prev, exp: newExp };
+  });
+  
+  return finalReward;
+}
   function renderRunRecap(player, enemy, stage) {
 
   }
 
   function incrementStage(n) {
-    setStage(stage + n)
+    setStage(prev => prev + n);
   }
 
   //----------utilities---------------
@@ -543,8 +567,8 @@ useEffect(() => {
       <h1>Prova</h1>
       <div>{stage}</div>
 
-      <img src={player.data?.sprites.front_default} alt="" />
-      <img src={enemy.data?.sprites.front_default} alt="" />
+      <img src={player.data?.sprites?.front_default} alt="" />
+      <img src={enemy.data?.sprites?.front_default} alt="" />
       {playerMoveSet.map(move => (
         <p
           onClick={() => setSelectedMove(move)}
