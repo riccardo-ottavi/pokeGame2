@@ -400,9 +400,22 @@ function App() {
       return
     }
 
-    if(move.damage_class.name === "status"){
-      console.log("La mossa", move.name, "non fa danno!");
-      return
+    if(move.stat_changes.length !== 0){
+      console.log("si applicano cambiamenti nelle statistiche di: ", move.target.name)
+      console.log(move.stat_changes[0].stat.name, "cambia di: ", move.stat_changes[0].change)
+    }
+
+    //controlla eventuali ailment
+    if(move.meta.ailment.name !== "none"){
+      console.log("si potrebbe applicare lo stato: ", move.meta.ailment.name, "chance: ", move.meta.ailment_chance);
+      const random = generateRandomId(100);
+      if (random <= move.meta.ailment_chance){
+        console.log("lo stato",move.meta.ailment.name,"è entrato")
+        defender.status = move.meta.ailment.name;
+      }else{
+        console.log("lo stato",move.meta.ailment.name,"non è entrato")
+      }
+      console.log(random)
     }
 
     console.log(
@@ -415,6 +428,7 @@ function App() {
       move.name
     );
 
+    //applica eventuali danni
     updateHp(
       defender === player ? "player" : "enemy",
       "-",
