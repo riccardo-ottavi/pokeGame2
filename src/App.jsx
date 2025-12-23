@@ -144,6 +144,15 @@ function App() {
       this.data = data;
       this.exp = exp;
       this.expToNextLevel = Math.pow(this.level, 3);
+      this.statModifiers = {
+        attack: 0,
+        defense: 0,
+        speed: 0,
+        spAttack: 0,
+        spDefense: 0,
+        accuracy: 0,
+        evasion: 0
+      };
     }
   }
 
@@ -400,22 +409,24 @@ function App() {
       return
     }
 
-    if(move.stat_changes.length !== 0){
+    if (move.stat_changes.length !== 0) {
       console.log("si applicano cambiamenti nelle statistiche di: ", move.target.name)
       console.log(move.stat_changes[0].stat.name, "cambia di: ", move.stat_changes[0].change)
+      if (move.target.name === "user") {
+        const updateStats = new Stats()
+      }
     }
 
     //controlla eventuali ailment
-    if(move.meta.ailment.name !== "none"){
+    if (move.meta.ailment.name !== "none") {
       console.log("si potrebbe applicare lo stato: ", move.meta.ailment.name, "chance: ", move.meta.ailment_chance);
       const random = generateRandomId(100);
-      if (random <= move.meta.ailment_chance){
-        console.log("lo stato",move.meta.ailment.name,"è entrato")
+      if (random <= move.meta.ailment_chance || move.meta.ailment_chance === 0) {
+        console.log("lo stato", move.meta.ailment.name, "è entrato")
         defender.status = move.meta.ailment.name;
-      }else{
-        console.log("lo stato",move.meta.ailment.name,"non è entrato")
+      } else {
+        console.log("lo stato", move.meta.ailment.name, "non è entrato")
       }
-      console.log(random)
     }
 
     console.log(
@@ -435,6 +446,20 @@ function App() {
       trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender)
     );
   }
+
+  //applica cambiamenti alle statistiche 
+  function applyStatChange(target, stat, amount) {
+    setPlayer(prev => {
+      const newStages = { ...prev.statModifiers };
+      newStages[stat] = Math.max(-6, Math.min(6, newStages[stat] + amount));
+
+      return {
+        ...prev,
+        statModifiers: newStages
+      };
+    });
+  }
+
 
   function evaluateModifiers(attackerStats, defenderStats, move, attacker, defender) {
     let dmgMoltiplier = 1;
@@ -575,9 +600,12 @@ function App() {
 
   function trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender) {
 
+    const effectiveAttack = attackerStats.attack * getStageMultiplier(attacker.statModifiers.attack)
+    const effectiveDefense = defenderStats.defense * getStageMultiplier(defender.statModifiers.defense)
+
     const baseDamage =
       (((((2 * attacker.level) / 5 + 2) * move.power *
-        attackerStats.attack / defenderStats.defense) / 50) + 2);
+        effectiveAttack / effectiveDefense) / 50) + 2);
 
     const modifier = evaluateModifiers(
       attackerStats,
@@ -589,6 +617,13 @@ function App() {
 
     return Math.floor(baseDamage * modifier);
   }
+
+  //serve a gestire i danni quando le stats sono buffate
+  function getStageMultiplier(stage) {
+    if (stage >= 0) return (2 + stage) / 2;
+    return 2 / (2 - stage);
+  }
+
   //funzione che bilancia il gioco
   function getEnemyLevel(stage) {
     return 3 + stage;
