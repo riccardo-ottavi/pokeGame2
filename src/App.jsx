@@ -396,14 +396,20 @@ function App() {
     useMove(enemy, enemyMoveSet[0], player, enemyStats, defenderStats)
   }
 
+
+  //funzione principale del fight system, riceve una mossa o oggetto e sceglie come procedere 
   function useMove(attacker, move, defender, attackerStats, defenderStats) {
+
+    if(attacker.status !== null){
+      statusHandler(attacker)
+    }
 
     if (!move) return;
     if (attacker.currentHp <= 0) return;
 
     //controlli validità mossa
     if (move.isItem) {
-      //qui sei sicuro che haai inviato un oggetto
+      //qui sei sicuro che hai inviato un oggetto
       useItem(move)
 
       return
@@ -460,6 +466,12 @@ function App() {
       trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender)
     );
   }
+
+
+  function statusHandler(pokemon){
+    console.log(pokemon.data.name,"inzia il turno con questo status:! ", pokemon.status);
+  }
+
 
   //applica cambiamenti alle statistiche 
   function applyStatChange(target, stat, amount) {
