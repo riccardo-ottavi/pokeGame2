@@ -400,9 +400,9 @@ function App() {
       return
     }
 
-    if (move.power == null) {
+    if(move.damage_class.name === "status"){
       console.log("La mossa", move.name, "non fa danno!");
-      return;
+      return
     }
 
     console.log(
