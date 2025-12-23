@@ -397,6 +397,24 @@ function App() {
   }
 
 
+  function formatMove(move){
+    const moveFormat = {
+      id:move.id,
+      name: move.name,
+      category: move.damage_class.name,
+      accuracy: move.accuracy,
+
+      effect:{
+        kind: isVolatileEffect(),
+        status: interpretateEffect(move.effect_entries),
+        chanche: move.effect_chance
+      },
+    }
+
+    return moveFormat 
+  }
+
+
   //funzione principale del fight system, riceve una mossa o oggetto e sceglie come procedere 
   function useMove(attacker, move, defender, attackerStats, defenderStats) {
 
@@ -472,6 +490,11 @@ function App() {
     console.log(pokemon.data.name,"inzia il turno con questo status:! ", pokemon.status);
   }
 
+  //dimmi che tipo di effetto produce e con quali parametri 
+  function interpretateEffect(move){
+
+  }
+
 
   //applica cambiamenti alle statistiche 
   function applyStatChange(target, stat, amount) {
@@ -504,8 +527,6 @@ function App() {
 
   function evaluateModifiers(attackerStats, defenderStats, move, attacker, defender) {
     let dmgMoltiplier = 1;
-
-
     //verifica se la mossa fallisce doMovesFail()
     const random = generateRandomId(100);
     if (random >= move.accuracy) {
@@ -618,6 +639,11 @@ function App() {
     return finalReward;
   }
   function renderRunRecap(player, enemy, stage) {
+
+  }
+
+  //stabilisce se una mossa applica un effetto volatile o persistente
+  function isVolatileEffect(){
 
   }
 
