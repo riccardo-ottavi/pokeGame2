@@ -5,13 +5,10 @@ function App() {
   //----------stati---------------
   const [stage, setStage] = useState(1)
   const [isGameOver, setIsGameOver] = useState(false)
-
   const [player, setPlayer] = useState({})
   const [playerStats, setPlayerStats] = useState({})
-  const [isPlayerAlive, setIsPlayerAlive] = useState(true)
   const [enemy, setEnemy] = useState({})
   const [enemyStats, setEnemyStats] = useState({})
-  const [isEnemyAlive, setIsEnemAlive] = useState(true)
   const [playerMoveSet, setPlayerMoveSet] = useState([])
   const [enemyMoveSet, setEnemyMoveSet] = useState([])
   const [playerInv, setPlayerInv] = useState([])
@@ -206,41 +203,38 @@ function App() {
     handleProgression();
   }, [])
 
+  // cambio stage → nuovo nemico
   useEffect(() => {
-    if (stage !== 1 && enemy.data && player.data) {
-      
+    if (stage > 1 && !isGameOver) {
+      spawnNewEnemy(stage);
     }
   }, [stage]);
 
-  // Player muore → Game Over, niente spawn di enemy
-useEffect(() => {
-  if (player.currentHp <= 0) {
-    console.log("fine gioco!", player.data.name, "è esausto");
-    setIsPlayerAlive(false);
-    setIsGameOver(true);
-  }
-}, [player.currentHp]);
 
-// Enemy muore → incrementa stage e spawn nuovo nemico
-useEffect(() => {
-  if (enemy.currentHp <= 0) {
-    console.log("Complimenti!", enemy.data.name, "è esausto");
-    setIsEnemAlive(false);
-    generateReward(stage, enemy, player);
-    const newStage = stage + 1;
-    incrementStage(1);
-    spawnNewEnemy(newStage);
-  }
-}, [enemy.currentHp]);
+  // Enemy muore → incrementa stage e spawn nuovo nemico
+  useEffect(() => {
+    if (enemy.currentHp <= 0) {
+      console.log("Complimenti!", enemy.data.name, "è esausto");
+      generateReward(stage, enemy, player);
+      incrementStage(1);
+    }
+  }, [enemy.currentHp, isGameOver]);
 
-useEffect(() => {
-  if (!player.exp) return;
+  useEffect(() => {
+    if (player.currentHp <= 0) {
+      setIsGameOver(true);
+      setStage(1);
+    }
+  }, [player.currentHp, isGameOver]);
 
-  if (player.exp >= player.expToNextLevel) {
-    const bonusExp = player.exp - player.expToNextLevel;
-    instanciatePoke(player, player.level + 1, bonusExp);
-  }
-}, [player.exp]);
+  useEffect(() => {
+    if (!player.exp) return;
+
+    if (player.exp >= player.expToNextLevel) {
+      const bonusExp = player.exp - player.expToNextLevel;
+      instanciatePoke(player, player.level + 1, bonusExp);
+    }
+  }, [player.exp]);
 
   //----------inizializzazioni---------------
 
@@ -277,21 +271,33 @@ useEffect(() => {
     }
   }
 
-  function instanciatePoke(playerInstance, level, bonusExp) {
+  function instanciatePoke(playerInstance, newLevel, bonusExp) {
     const pokeData = playerInstance.data;
-    if (!pokeData || !pokeData.stats) return;  
-    const playerStats = new Stats(pokeData.stats, level);
-    const instanciatedPlayer = new PokemonInstance(
+
+    const oldMaxHp = playerInstance.maxHp;
+    const oldCurrentHp = playerInstance.currentHp;
+
+    const newStats = new Stats(pokeData.stats, newLevel);
+    const newMaxHp = newStats.hp;
+
+    const hpIncrease = newMaxHp - oldMaxHp;
+    const newCurrentHp = Math.min(
+      newMaxHp,
+      oldCurrentHp + hpIncrease
+    );
+
+    const newPlayer = new PokemonInstance(
       pokeData.id,
-      level,
-      playerStats.hp,
-      playerStats.hp,
-      null,
+      newLevel,
+      newMaxHp,
+      newCurrentHp,
+      playerInstance.status,
       pokeData,
       bonusExp
     );
-    setPlayer(instanciatedPlayer);
-    setPlayerStats(playerStats);
+
+    setPlayer(newPlayer);
+    setPlayerStats(newStats);
   }
 
   //fetcha qualcosa
@@ -301,26 +307,25 @@ useEffect(() => {
   }
 
   async function spawnNewEnemy(newStage) {
-  const pokeId = generateRandomId(idLimit);
-  const poke = await fetchFromApi("pokemon", pokeId);
-  const enemyLevel = getEnemyLevel(newStage);
-  const enemyStats = new Stats(poke.stats, enemyLevel);
+    const pokeId = generateRandomId(idLimit);
+    const poke = await fetchFromApi("pokemon", pokeId);
+    const enemyLevel = getEnemyLevel(newStage);
+    const enemyStats = new Stats(poke.stats, enemyLevel);
 
-  const newEnemy = new PokemonInstance(
-    pokeId,
-    enemyLevel,
-    enemyStats.hp,
-    enemyStats.hp,
-    null,
-    poke,
-    0
-  );
+    const newEnemy = new PokemonInstance(
+      pokeId,
+      enemyLevel,
+      enemyStats.hp,
+      enemyStats.hp,
+      null,
+      poke,
+      0
+    );
 
-  setEnemy(newEnemy);
-  setEnemyStats(enemyStats);
-  setIsEnemAlive(true);
-  initializeMoveset(newEnemy, 4, "enemy");
-}
+    setEnemy(newEnemy);
+    setEnemyStats(enemyStats);
+    initializeMoveset(newEnemy, 4, "enemy");
+  }
 
   //inizializza il moveset 
   async function initializeMoveset(pokemon, movesNumber, target) {
@@ -363,13 +368,13 @@ useEffect(() => {
       console.log("sei più veloce!")
       executePlayerTurn(attacker, defencer, playerStats, enemyStats, attackerMove)
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
-     
+
     }
     else {
       console.log("sei più lento!")
       executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
       executePlayerTurn(attacker, defencer, playerStats, enemyStats, attackerMove)
-      
+
     }
   }
 
@@ -435,8 +440,8 @@ useEffect(() => {
       return dmgMoltiplier *= 1.5
     }
 
-    
-    
+
+
 
     const moveType = move.type?.name;
     const defenderTypes = defender.data.types.map(t => t.type.name);
@@ -448,8 +453,9 @@ useEffect(() => {
 
     //verifica se la mossa è STAB
     const attackerTypes = attacker.data.types.map(t => t.type.name);
-    if (attackerTypes.includes(moveType)){
+    if (attackerTypes.includes(moveType)) {
       console.log("E' STAB!");
+      dmgMoltiplier *= 1.5;
     }
 
     defenderTypes.forEach(defType => {
@@ -510,20 +516,27 @@ useEffect(() => {
     await firstInstancePokemon("enemy");
   }
 
-  function generateNewFight(stage) {
-
+  function startNewRun() {
+    setIsGameOver(false);
+    setStage(1);
+    setSelectedMove(null);
+    setPlayerMoveSet([]);
+    setEnemyMoveSet([]);
+    setPlayerInv([]);
+    handleProgression();
   }
+
 
   //qua puoi bilanciare il gioco aumentando l'exp data dai nemici
   function generateReward(stage, beatenEnemy, player) {
-  const finalReward = beatenEnemy.data.base_experience * (1 + stage / 4);
-  setPlayer(prev => {
-    const newExp = prev.exp + finalReward;
-    return { ...prev, exp: newExp };
-  });
-  
-  return finalReward;
-}
+    const finalReward = beatenEnemy.data.base_experience * (1 + stage / 4);
+    setPlayer(prev => {
+      const newExp = prev.exp + finalReward;
+      return { ...prev, exp: newExp };
+    });
+
+    return finalReward;
+  }
   function renderRunRecap(player, enemy, stage) {
 
   }
@@ -574,27 +587,39 @@ useEffect(() => {
 
   return (
     <>
-      <h1>Prova</h1>
-      <div>{stage}</div>
+      {!isGameOver &&
+        <div className="container">
+          <div>STAGE: {stage}</div>
+          <p>{player.currentHp} / {player.maxHp}</p>
+          <p>{enemy.currentHp} / {enemy.maxHp}</p>
+          <img src={player.data?.sprites?.front_default} alt="" />
+          <img src={enemy.data?.sprites?.front_default} alt="" />
+          {playerMoveSet.map(move => (
+            <p
+              onClick={() => setSelectedMove(move)}
+              key={move.id}
+            >{move.name}</p>
 
-      <img src={player.data?.sprites?.front_default} alt="" />
-      <img src={enemy.data?.sprites?.front_default} alt="" />
-      {playerMoveSet.map(move => (
-        <p
-          onClick={() => setSelectedMove(move)}
-          key={move.id}
-        >{move.name}</p>
-
-      ))}
-      {playerInv.map(item => (
-        <p
-          onClick={() => setSelectedMove(item)}
-          key={item.data.id}
-        >{item.name}
-        </p>
-      ))}
-      <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats, enemyMoveSet)}>Confirm</button>
-      <p>Mossa attiva: {selectedMove?.name}</p>
+          ))}
+          {playerInv.map(item => (
+            <p
+              onClick={() => setSelectedMove(item)}
+              key={item.data.id}
+            >{item.name}
+            </p>
+          ))}
+          <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats, enemyMoveSet)}>Confirm</button>
+          <p>Mossa attiva: {selectedMove?.name}</p>
+          <button onClick={() => startNewRun()}>Resetta Run</button>
+        </div>
+      }
+      {isGameOver &&
+        <div className="container">
+          <h2>HAI PERSO!</h2>
+          <p>Stage raggiunto: {stage}</p>
+          <button onClick={() => startNewRun()}>Nuova run</button>
+        </div>
+      }
     </>
   )
 }
