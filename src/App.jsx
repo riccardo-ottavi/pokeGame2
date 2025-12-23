@@ -409,11 +409,22 @@ function App() {
       return
     }
 
+    //potrebbe portare bug, un domani fai forEach direttamentes su move.stat_changes
     if (move.stat_changes.length !== 0) {
       console.log("si applicano cambiamenti nelle statistiche di: ", move.target.name)
       console.log(move.stat_changes[0].stat.name, "cambia di: ", move.stat_changes[0].change)
       if (move.target.name === "user") {
-        const updateStats = new Stats()
+        applyStatChange(
+          attacker,
+          move.stat_changes[0].stat.name,
+          move.stat_changes[0].change
+        )
+      } else if (move.target.name === "selected-pokemon") {
+        applyStatChange(
+          defender,
+          move.stat_changes[0].stat.name,
+          move.stat_changes[0].change
+        )
       }
     }
 
@@ -452,15 +463,30 @@ function App() {
 
   //applica cambiamenti alle statistiche 
   function applyStatChange(target, stat, amount) {
-    setPlayer(prev => {
-      const newStages = { ...prev.statModifiers };
-      newStages[stat] = Math.max(-6, Math.min(6, newStages[stat] + amount));
 
-      return {
-        ...prev,
-        statModifiers: newStages
-      };
-    });
+    if (target.data.name === player.data.name) {
+      setPlayer(prev => {
+        const newStages = { ...prev.statModifiers };
+        newStages[stat] = Math.max(-6, Math.min(6, newStages[stat] + amount));
+
+        return {
+          ...prev,
+          statModifiers: newStages
+        };
+      });
+    } else {
+      setEnemy(prev => {
+        const newStages = { ...prev.statModifiers };
+        newStages[stat] = Math.max(-6, Math.min(6, newStages[stat] + amount));
+
+        return {
+          ...prev,
+          statModifiers: newStages
+        };
+      });
+
+    }
+
   }
 
 
