@@ -423,7 +423,10 @@ function App() {
       const random = generateRandomId(100);
       if (random <= move.meta.ailment_chance || move.meta.ailment_chance === 0) {
         console.log("lo stato", move.meta.ailment.name, "è entrato")
-        defender.status = move.meta.ailment.name;
+        setEnemy(prev => ({
+          ...prev,
+          status: move.meta.ailment.name
+        }));
       } else {
         console.log("lo stato", move.meta.ailment.name, "non è entrato")
       }
