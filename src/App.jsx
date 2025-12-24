@@ -388,13 +388,28 @@ function App() {
     }
   }
 
+  //controlla stato (paralizi, freeze ecc), usa mossa o item e poi applica status dmg(burn, poison ecc)
   function executePlayerTurn(player, enemy, playerStats, enemyStats, move) {
     if (!move) return;
+    startTurnStatusApply();
     useMove(player, move, enemy, playerStats, enemyStats);
+    endTurnStatusApply();
   }
 
   function executeEnemyTurn(enemy, player, enemyMoveSet, defenderStats, enemyStats) {
+    startTurnStatusApply();
     useMove(enemy, enemyMoveSet[0], player, enemyStats, defenderStats)
+    endTurnStatusApply();
+  }
+
+  //paralisi, sonno ecc (se burn dimezza attacco)
+  function startTurnStatusApply(){
+
+  }
+
+  // poison/burn damage
+  function endTurnStatusApply(){
+
   }
 
 
@@ -463,14 +478,28 @@ function App() {
           break;
 
         case "status":
-          applyStatus(target, status, chance);
+          applyStatus(target, status, 100);
           break;
       }
     });
   }
 
-  function applyStatus() {
-    
+  //verifica se lo status entra e capisce a chi assegnarlo
+  function applyStatus(target, newStatus, chance) {
+    if(chance >= generateRandomId(100)){
+      if (target === "player") {
+      setPlayer(prev => ({
+        ...prev,
+        status: newStatus
+      }));
+
+    } else {
+      setEnemy(prev => ({
+        ...prev,
+        status: newStatus
+      }));
+    }
+    }
   }
 
   function statusHandler(pokemon) {
