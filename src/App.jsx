@@ -351,11 +351,12 @@ function App() {
       promises.push(moveData)
     }
     const moves = await Promise.all(promises)
+    const formattedMoves = moves.map(formatMove);
 
     if (target === "player") {
-      setPlayerMoveSet(moves)
+      setPlayerMoveSet(formattedMoves)
     } else {
-      setEnemyMoveSet(moves)
+      setEnemyMoveSet(formattedMoves)
     }
 
     return moves
@@ -397,28 +398,23 @@ function App() {
   }
 
 
-  function formatMove(move){
-    const moveFormat = {
-      id:move.id,
+  function formatMove(move) {
+    return {
+      id: move.id,
       name: move.name,
-      category: move.damage_class.name,
+      power: move.power,
       accuracy: move.accuracy,
+      category: move.damage_class.name,
+      type: move.type.name,
 
-      effect:{
-        kind: isVolatileEffect(),
-        status: interpretateEffect(move.effect_entries),
-        chanche: move.effect_chance
-      },
-    }
-
-    return moveFormat 
+      effects: buildEffects(move)
+    };
   }
-
 
   //funzione principale del fight system, riceve una mossa o oggetto e sceglie come procedere 
   function useMove(attacker, move, defender, attackerStats, defenderStats) {
 
-    if(attacker.status !== null){
+    if (attacker.status !== null) {
       statusHandler(attacker)
     }
 
@@ -433,39 +429,10 @@ function App() {
       return
     }
 
-    //potrebbe portare bug, un domani fai forEach direttamentes su move.stat_changes
-    if (move.stat_changes.length !== 0) {
-      console.log("si applicano cambiamenti nelle statistiche di: ", move.target.name)
-      console.log(move.stat_changes[0].stat.name, "cambia di: ", move.stat_changes[0].change)
-      if (move.target.name === "user") {
-        applyStatChange(
-          attacker,
-          move.stat_changes[0].stat.name,
-          move.stat_changes[0].change
-        )
-      } else if (move.target.name === "selected-pokemon") {
-        applyStatChange(
-          defender,
-          move.stat_changes[0].stat.name,
-          move.stat_changes[0].change
-        )
-      }
+    if (move.effects.length > 0) {
+      applyEffects(move.effects, attacker, defender);
     }
 
-    //controlla eventuali ailment
-    if (move.meta.ailment.name !== "none") {
-      console.log("si potrebbe applicare lo stato: ", move.meta.ailment.name, "chance: ", move.meta.ailment_chance);
-      const random = generateRandomId(100);
-      if (random <= move.meta.ailment_chance || move.meta.ailment_chance === 0) {
-        console.log("lo stato", move.meta.ailment.name, "è entrato")
-        setEnemy(prev => ({
-          ...prev,
-          status: move.meta.ailment.name
-        }));
-      } else {
-        console.log("lo stato", move.meta.ailment.name, "non è entrato")
-      }
-    }
 
     console.log(
       attacker.data.name,
@@ -485,15 +452,71 @@ function App() {
     );
   }
 
+  function applyEffects(effects, attacker, defender) {
+    effects.forEach(effect => {
+      const target =
+        effect.target === "user" ? attacker : defender;
 
-  function statusHandler(pokemon){
-    console.log(pokemon.data.name,"inzia il turno con questo status:! ", pokemon.status);
+      switch (effect.kind) {
+        case "stat-change":
+          applyStatChange(target, effect.stat, effect.amount);
+          break;
+
+        case "status":
+          applyStatus(target, status, chance);
+          break;
+      }
+    });
+  }
+
+  function applyStatus() {
+    
+  }
+
+  function statusHandler(pokemon) {
+    console.log(pokemon.data.name, "inzia il turno con questo status:! ", pokemon.status);
+    switch (pokemon.status) {
+      case "poison":
+        updateHp(
+          pokemon === player ? "player" : "enemy",
+          "-",
+          Math.floor(pokemon.maxHp / 8)
+        );
+        break;
+
+      case "paralysis":
+        // 25% di saltare il turno
+        break;
+    }
   }
 
   //dimmi che tipo di effetto produce e con quali parametri 
-  function interpretateEffect(move){
+  function buildEffects(move) {
+    const effects = [];
 
+    if (move.meta?.ailment?.name !== "none") {
+      effects.push({
+        kind: "status",
+        status: move.meta.ailment.name,
+        chance: move.meta.ailment_chance,
+        target: move.target.name
+      });
+    }
+
+    if (move.stat_changes?.length > 0) {
+      move.stat_changes.forEach(sc => {
+        effects.push({
+          kind: "stat-change",
+          stat: sc.stat.name,
+          amount: sc.change,
+          target: move.target.name
+        });
+      });
+    }
+
+    return effects;
   }
+
 
 
   //applica cambiamenti alle statistiche 
@@ -546,8 +569,6 @@ function App() {
 
     const moveType = move.type?.name;
     const defenderTypes = defender.data.types.map(t => t.type.name);
-    console.log("tipo mossa: ", moveType);
-    defenderTypes.forEach(tipo => console.log("tipi difensore: ", tipo))
 
     const thisEfficacies = typesEfficacy.find(t => t.type === moveType);
     if (!thisEfficacies) return dmgMoltiplier;
@@ -643,7 +664,7 @@ function App() {
   }
 
   //stabilisce se una mossa applica un effetto volatile o persistente
-  function isVolatileEffect(){
+  function isVolatileEffect() {
 
   }
 
