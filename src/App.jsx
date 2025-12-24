@@ -141,6 +141,7 @@ function App() {
       this.maxHp = maxHp;
       this.currentHp = currentHp;
       this.status = status;
+      this.volatileStatus = [];
       this.data = data;
       this.exp = exp;
       this.expToNextLevel = Math.pow(this.level, 3);
@@ -261,7 +262,7 @@ function App() {
       const instanciatedPlayer = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);
       setPlayer(instanciatedPlayer)
       setPlayerStats(playerStats)
-      initializeMoveset(instanciatedPlayer, 4, "player")
+      initializeMoveset(instanciatedPlayer, 2, "player")
       initializeItems("player", instanciatedPlayer);
 
     } else {
@@ -333,16 +334,25 @@ function App() {
 
     setEnemy(newEnemy);
     setEnemyStats(enemyStats);
-    initializeMoveset(newEnemy, 4, "enemy");
+    initializeMoveset(newEnemy, 2, "enemy");
   }
 
   //inizializza il moveset 
   async function initializeMoveset(pokemon, movesNumber, target) {
+    let maxRange = pokemon.data.moves.length;
+    let randomInt = Math.floor(Math.random() * maxRange);
+
     pokemon.moveset = [];
     for (let i = 0; i < movesNumber; i++) {
-      const moveName = pokemon.data.moves[i].move.name
-      pokemon.moveset[i] = moveName
+      let moveName;
+      do {
+        const randomInt = Math.floor(Math.random() * pokemon.data.moves.length);
+        moveName = pokemon.data.moves[randomInt].move.name;
+      } while (pokemon.moveset.includes(moveName));
+
+      pokemon.moveset.push(moveName);
     }
+
 
     //le chiamate trasformano la stringa in oggetto completo con info mosse come PP o Potenza
     const promises = [];
@@ -444,7 +454,7 @@ function App() {
           } else {
             console.log(pokemon.data.name, "è congelato e salta il turno!");
             return false;
-          }  
+          }
         }
         break;
 
@@ -462,7 +472,7 @@ function App() {
             pokemon.status = null; // sveglio
             console.log(pokemon.data.name, "si è svegliato!");
             return true;
-          }          
+          }
         }
         break;
 
@@ -523,12 +533,17 @@ function App() {
     }
 
     //refactoring: canApplyStatus(defender)
-    if (move.effects.length > 0) {
+    if (move.effects?.length > 0) {
       if (defender.status === null) {
         applyEffects(move.effects, attacker, defender);
       } else {
         console.log(`${defender.data.name} è già affetto da uno status!`);
       }
+    }
+
+    //controlla se la mossa ha stati volatili
+    if (move.effects?.some(e => e.kind === "volatile-status")) {
+      applyVolatileEffect(defender, "confusion");
     }
 
 
@@ -570,13 +585,13 @@ function App() {
   //verifica se lo status entra e capisce a chi assegnarlo
   function applyStatus(target, newStatus, chance) {
     if (chance >= generateRandomId(100)) {
-      if (target === "player") {
+      if (target === player) {
         setPlayer(prev => ({
           ...prev,
           status: newStatus
         }));
 
-      } else {
+      } else if (target === enemy) {
         setEnemy(prev => ({
           ...prev,
           status: newStatus
@@ -605,7 +620,7 @@ function App() {
   function buildEffects(move) {
     const effects = [];
 
-    if (move.meta?.ailment?.name !== "none") {
+    if (move.meta?.ailment && move.meta.ailment.name !== "none") {
       effects.push({
         kind: "status",
         status: move.meta.ailment.name,
@@ -653,11 +668,14 @@ function App() {
           statModifiers: newStages
         };
       });
-
     }
-
   }
 
+  function applyVolatileEffect(target, effect) {
+    if (!target.volatileStatus.includes(effect)) {
+      target.volatileStatus.push(effect);
+    }
+  }
 
   function evaluateModifiers(attackerStats, defenderStats, move, attacker, defender) {
     let dmgMoltiplier = 1;
