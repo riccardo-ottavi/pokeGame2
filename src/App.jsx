@@ -437,7 +437,6 @@ function App() {
 
       case "freeze":
         if (pokemon.status === "freeze") {
-          const random = generateRandomId(100);
           if (random <= 20) {
             pokemon.status = null; // si scongela
             console.log(pokemon.data.name, "si è scongelato!");
@@ -445,8 +444,10 @@ function App() {
           } else {
             console.log(pokemon.data.name, "è congelato e salta il turno!");
             return false;
-          }
+          }  
         }
+        break;
+
       case "sleep":
         if (pokemon.status === "sleep") {
           if (!pokemon.sleepTurns) {
@@ -461,8 +462,10 @@ function App() {
             pokemon.status = null; // sveglio
             console.log(pokemon.data.name, "si è svegliato!");
             return true;
-          }
+          }          
         }
+        break;
+
       case "burn":
         if (pokemon === player) {
           setPlayer(prev => ({
@@ -519,8 +522,13 @@ function App() {
       return
     }
 
+    //refactoring: canApplyStatus(defender)
     if (move.effects.length > 0) {
-      applyEffects(move.effects, attacker, defender);
+      if (defender.status === null) {
+        applyEffects(move.effects, attacker, defender);
+      } else {
+        console.log(`${defender.data.name} è già affetto da uno status!`);
+      }
     }
 
 
