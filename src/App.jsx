@@ -433,8 +433,8 @@ function App() {
 
   //ritorna true se riesce a fare la mossa o false se rimane bloccato dallo stato
   function startTurnStatusApply(pokemon) {
-    console.log("status pokemon: ", pokemon.status);
-
+    console.log("status pokemon: ", pokemon.status,"status volatile pokemon: ", pokemon.volatileStatus);
+    if (!handleVolatileStatus(pokemon)) return false;
     const random = generateRandomId(100);
 
     switch (pokemon.status) {
@@ -546,7 +546,6 @@ function App() {
       applyVolatileEffect(defender, "confusion");
     }
 
-
     console.log(
       attacker.data.name,
       "deals",
@@ -621,8 +620,9 @@ function App() {
     const effects = [];
 
     if (move.meta?.ailment && move.meta.ailment.name !== "none") {
+      const kind = move.meta.ailment.name === "confusion" ? "volatile-status" : "status";
       effects.push({
-        kind: "status",
+        kind,
         status: move.meta.ailment.name,
         chance: move.meta.ailment_chance,
         target: move.target.name
@@ -672,10 +672,58 @@ function App() {
   }
 
   function applyVolatileEffect(target, effect) {
-    if (!target.volatileStatus.includes(effect)) {
-      target.volatileStatus.push(effect);
+  if (target === player) {
+    setPlayer(prev => {
+      if (!prev.volatileStatus.includes(effect)) {
+        return { ...prev, volatileStatus: [...prev.volatileStatus, effect] };
+      }
+      return prev;
+    });
+  } else {
+    setEnemy(prev => {
+      if (!prev.volatileStatus.includes(effect)) {
+        return { ...prev, volatileStatus: [...prev.volatileStatus, effect] };
+      }
+      return prev;
+    });
+  }
+
+  }
+
+  function handleVolatileStatus(pokemon){
+    //confusione
+    if(pokemon.volatileStatus.includes("confusion")){
+      const chance = generateRandomId(100);
+    if (chance < 50) { // 50% di colpirsi da solo
+      console.log(`${pokemon.data.name} è confuso e si colpisce da solo!`);
+      updateHp(
+        pokemon === player ? "player" : "enemy",
+        "-",
+        Math.floor(pokemon.maxHp / 8)
+      );
+      return false;
     }
   }
+  //controlla altri stati volatili (tipo flinch)
+  if (pokemon.volatileStatus.includes("flinch")) {
+    console.log(`${pokemon.data.name} subisce Flinch e salta il turno!`);
+    // rimuove flinch dopo averlo applicato
+    if (pokemon === player) {
+      setPlayer(prev => ({
+        ...prev,
+        volatileStatus: prev.volatileStatus.filter(e => e !== "flinch")
+      }));
+    } else {
+      setEnemy(prev => ({
+        ...prev,
+        volatileStatus: prev.volatileStatus.filter(e => e !== "flinch")
+      }));
+    }
+    return false; // turno saltato
+  }
+  
+  return true;
+}
 
   function evaluateModifiers(attackerStats, defenderStats, move, attacker, defender) {
     let dmgMoltiplier = 1;
