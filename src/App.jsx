@@ -140,7 +140,7 @@ function App() {
       this.level = level;
       this.maxHp = maxHp;
       this.currentHp = currentHp;
-      this.status = [];
+      this.status = null;
       this.volatileStatus = [];
       this.data = data;
       this.exp = exp;
@@ -416,18 +416,18 @@ function App() {
 
   //danni da status a fine turno
   function endTurnStatusApply() {
-    if (player.status === "burn") {
+    if (player.status?.type === "burn") {
       updateHp("player", "-", Math.floor(player.maxHp / 8));
     }
-    if (enemy.status === "burn") {
+    if (enemy.status?.type === "burn") {
       updateHp("enemy", "-", Math.floor(enemy.maxHp / 8));
     }
 
     // Poison
-    if (player.status === "poison") {
+    if (player.status?.type === "poison") {
       updateHp("player", "-", Math.floor(player.maxHp / 8));
     }
-    if (enemy.status === "poison") {
+    if (enemy.status?.type === "poison") {
       updateHp("enemy", "-", Math.floor(enemy.maxHp / 8));
     }
 
@@ -439,7 +439,7 @@ function App() {
     if (!handleVolatileStatus(pokemon)) return false;
     const random = generateRandomId(100);
 
-    switch (pokemon.status) {
+    switch (pokemon.status?.type) {
       case "paralysis":
         if (random <= 25) {
           console.log(pokemon.data.name, "salta il turno (paralisi)!");
@@ -448,7 +448,7 @@ function App() {
         break;
 
       case "freeze":
-        if (pokemon.status === "freeze") {
+        if (pokemon.status?.type === "freeze") {
           if (random <= 20) {
             pokemon.status = null; // si scongela
             console.log(pokemon.data.name, "si è scongelato!");
@@ -474,22 +474,24 @@ function App() {
         break;
 
       case "burn":
-        if (pokemon === player) {
-          setPlayer(prev => ({
-            ...prev,
-            statModifiers: {
-              ...prev.statModifiers,
-              attack: -1
-            }
-          }));
-        } else {
-          setEnemy(prev => ({
-            ...prev,
-            statModifiers: {
-              ...prev.statModifiers,
-              attack: -1
-            }
-          }));
+        if (pokemon.status?.type === "burn") {
+          if (pokemon === player) {
+            setPlayer(prev => ({
+              ...prev,
+              statModifiers: {
+                ...prev.statModifiers,
+                attack: -1
+              }
+            }));
+          } else {
+            setEnemy(prev => ({
+              ...prev,
+              statModifiers: {
+                ...prev.statModifiers,
+                attack: -1
+              }
+            }));
+          }
         }
     }
 
@@ -512,39 +514,23 @@ function App() {
   }
 
   function formatVolatileStatus(type, turns) {
-  return {
-    type,
-    turns
-  };
-}
-
-function formatStatus(type) {
-  return {type}
-}
-
-  function decrementSleep() {
-    if (target === player) {
-      setPlayer(prev => {
-        return { ...prev, turns: turns - 1 }
-      });
-    } else {
-      setEnemy(prev => {
-        return { ...prev, turns: turns - 1 }
-      });
-    }
+    return {
+      type,
+      turns
+    };
   }
 
-  function clearVolatileStatus(pokemon, target) {
-    if (target === player) {
-      setPlayer(prev => {
-        return { ...prev, volatileStatus: null }
-      });
-    } else {
-      setEnemy(prev => {
-        return { ...prev, volatileStatus: null }
-      });
-    }
+  function formatStatus(type) {
+    return { type }
   }
+
+  function decrementSleep(pokemon) {
+  if (pokemon.status && pokemon.status.turns > 0) {
+    const newTurns = pokemon.status.turns - 1;
+    if (pokemon === player) setPlayer(prev => ({ ...prev, status: { ...prev.status, turns: newTurns } }));
+    else setEnemy(prev => ({ ...prev, status: { ...prev.status, turns: newTurns } }));
+  }
+}
 
   //funzione principale del fight system, riceve una mossa o oggetto e sceglie come procedere 
   function useMove(attacker, move, defender, attackerStats, defenderStats) {
@@ -565,16 +551,16 @@ function formatStatus(type) {
     }
 
     move.effects.forEach(effect => {
-  if (effect.kind === "persistent") {
-    const status = formatStatus(effect.type);
-    setEnemy(prev => applyStatus(prev, status));
-  }
+      if (effect.kind === "persistent") {
+        const status = formatStatus(effect.type);
+        setEnemy(prev => applyStatus(prev, status));
+      }
 
-  if (effect.kind === "volatile") {
-    const volatile = formatVolatileStatus(effect.type, effect.turns);
-    setEnemy(prev => applyVolatileEffect(prev, volatile));
-  }
-});
+      if (effect.kind === "volatile-status") {
+        const volatile = formatVolatileStatus(effect.type, effect.turns);
+        setEnemy(prev => applyVolatileEffect(prev, volatile));
+      }
+    });
 
     console.log(
       attacker.data.name,
@@ -613,7 +599,7 @@ function formatStatus(type) {
 
   //verifica se lo status entra e capisce a chi assegnarlo
   function applyStatus(target, newStatus, chance) {
-    if (pokemon.status !== null) return pokemon;
+    if (target.status !== null) return target;
     if (chance >= generateRandomId(100)) {
       if (target === player) {
         setPlayer(prev => ({
@@ -633,11 +619,7 @@ function formatStatus(type) {
   function statusHandler(pokemon) {
     switch (pokemon.status) {
       case "poison":
-        updateHp(
-          pokemon === player ? "player" : "enemy",
-          "-",
-          Math.floor(pokemon.maxHp / 8)
-        );
+        
         break;
 
       case "paralysis":
@@ -703,75 +685,114 @@ function formatStatus(type) {
   }
 
   function applyVolatileEffect(pokemon, volatileStatus) {
-  const alreadyPresent = pokemon.volatileStatus
-    ?.some(s => s.type === volatileStatus.type);
+    const alreadyPresent = pokemon.volatileStatus
+      ?.some(s => s.type === volatileStatus.type);
 
-  if (alreadyPresent) return pokemon;
+    if (alreadyPresent) return pokemon;
 
-  return {
-    ...pokemon,
-    volatileStatus: [
-      ...(pokemon.volatileStatus || []),
-      volatileStatus
-    ]
-  };
-}
-
-  function decrementConfusion() {
-    if (target === player) {
-      setPlayer(prev => {
-        return { ...prev, turns: turns - 1 }
-      });
-    } else {
-      setEnemy(prev => {
-        return { ...prev, turns: turns - 1 }
-      });
-    }
+    return {
+      ...pokemon,
+      volatileStatus: [
+        ...(pokemon.volatileStatus || []),
+        volatileStatus
+      ]
+    };
   }
 
-  function clearVolatileStatus(pokemon, target) {
+  function decrementConfusion(pokemon) {
+  if (pokemon.volatileStatus && pokemon.volatileStatus.turns > 0) {
+    const newTurns = pokemon.volatileStatus.turns - 1;
+    if (pokemon === player) setPlayer(prev => ({ ...prev, volatileStatus: { ...prev.volatileStatus, turns: newTurns } }));
+    else setEnemy(prev => ({ ...prev, volatileStatus: { ...prev.volatileStatus, turns: newTurns } }));
+  }
+}
+
+  function clearVolatileStatus(target) {
     if (target === player) {
       setPlayer(prev => {
-        return { ...prev, volatileStatus: null }
+        return { ...prev, volatileStatus: [] }
       });
     } else {
       setEnemy(prev => {
-        return { ...prev, volatileStatus: null }
+        return { ...prev, volatileStatus: [] }
       });
     }
   }
 
   function handleVolatileStatus(pokemon) {
-    //confusione
-    if (pokemon.volatileStatus?.type === "confusion") {
-      if (pokemon.volatileStatus.turns > 0) {
-        decrementConfusion(pokemon);
-        return false;
-      } else {
-        clearVolatileStatus(pokemon);
-        return true;
-      }
-    }
-    //controlla altri stati volatili (tipo flinch)
-    if (pokemon.volatileStatus.includes("flinch")) {
-      console.log(`${pokemon.data.name} subisce Flinch e salta il turno!`);
-      // rimuove flinch dopo averlo applicato
+  // --- CONFUSIONE ---
+  const confusionIndex = pokemon.volatileStatus.findIndex(s => s.type === "confusion");
+  if (confusionIndex !== -1) {
+    const confusion = pokemon.volatileStatus[confusionIndex];
+
+    if (confusion.turns > 0) {
+      // decrementa i turni
+      const newTurns = confusion.turns - 1;
       if (pokemon === player) {
         setPlayer(prev => ({
           ...prev,
-          volatileStatus: prev.volatileStatus.filter(e => e !== "flinch")
+          volatileStatus: prev.volatileStatus.map((s, i) =>
+            i === confusionIndex ? { ...s, turns: newTurns } : s
+          )
         }));
       } else {
         setEnemy(prev => ({
           ...prev,
-          volatileStatus: prev.volatileStatus.filter(e => e !== "flinch")
+          volatileStatus: prev.volatileStatus.map((s, i) =>
+            i === confusionIndex ? { ...s, turns: newTurns } : s
+          )
         }));
       }
-      return false; // turno saltato
-    }
 
-    return true;
+      // 50% di chance di colpirsi da solo
+      if (generateRandomId(100) < 50) {
+        const selfDamage = Math.floor(pokemon.maxHp / 8);
+        console.log(`${pokemon.data.name} è confuso e si danneggia da solo!`);
+        updateHp(pokemon === player ? "player" : "enemy", "-", selfDamage);
+        return false; // turno saltato
+      }
+
+      console.log(`${pokemon.data.name} è confuso ma agisce normalmente!`);
+      return true; // il Pokémon può usare la mossa
+    } else {
+      // rimuove la confusione quando i turni finiscono
+      if (pokemon === player) {
+        setPlayer(prev => ({
+          ...prev,
+          volatileStatus: prev.volatileStatus.filter((_, i) => i !== confusionIndex)
+        }));
+      } else {
+        setEnemy(prev => ({
+          ...prev,
+          volatileStatus: prev.volatileStatus.filter((_, i) => i !== confusionIndex)
+        }));
+      }
+      console.log(`${pokemon.data.name} non è più confuso!`);
+      return true;
+    }
   }
+
+  // --- FLINCH ---
+  const flinchIndex = pokemon.volatileStatus.findIndex(s => s.type === "flinch");
+  if (flinchIndex !== -1) {
+    console.log(`${pokemon.data.name} subisce Flinch e salta il turno!`);
+    // rimuove flinch subito dopo
+    if (pokemon === player) {
+      setPlayer(prev => ({
+        ...prev,
+        volatileStatus: prev.volatileStatus.filter((_, i) => i !== flinchIndex)
+      }));
+    } else {
+      setEnemy(prev => ({
+        ...prev,
+        volatileStatus: prev.volatileStatus.filter((_, i) => i !== flinchIndex)
+      }));
+    }
+    return false; // turno saltato
+  }
+
+  return true; // nessuno stato volatile blocca il turno
+}
 
   function evaluateModifiers(attackerStats, defenderStats, move, attacker, defender) {
     let dmgMoltiplier = 1;
