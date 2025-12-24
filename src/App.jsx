@@ -525,52 +525,52 @@ function App() {
   }
 
   function decrementSleep(pokemon) {
-  if (pokemon.status && pokemon.status.turns > 0) {
-    const newTurns = pokemon.status.turns - 1;
-    if (pokemon === player) setPlayer(prev => ({ ...prev, status: { ...prev.status, turns: newTurns } }));
-    else setEnemy(prev => ({ ...prev, status: { ...prev.status, turns: newTurns } }));
+    if (pokemon.status && pokemon.status.turns > 0) {
+      const newTurns = pokemon.status.turns - 1;
+      if (pokemon === player) setPlayer(prev => ({ ...prev, status: { ...prev.status, turns: newTurns } }));
+      else setEnemy(prev => ({ ...prev, status: { ...prev.status, turns: newTurns } }));
+    }
   }
-}
 
   //funzione principale del fight system, riceve una mossa o oggetto e sceglie come procedere 
   function useMove(attacker, move, defender, attackerStats, defenderStats) {
-  if (!move) return;
-  if (attacker.currentHp <= 0) return;
+    if (!move) return;
+    if (attacker.currentHp <= 0) return;
 
-  // controlla se mossa è item
-  if (move.isItem) {
-    useItem(move);
-    return;
-  }
-
-  // calcolo danno
-  const damage = trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender);
-  updateHp(defender === player ? "player" : "enemy", "-", damage);
-  console.log(`${attacker.data.name} usa ${move.name} e infligge ${damage} danni a ${defender.data.name}`);
-
-  // applica effetti secondari
-  move.effects.forEach(effect => {
-    if (generateRandomId(100) <= (effect.chance || 100)) { // probabilità
-      const target = effect.target === "user" ? attacker : defender;
-
-      switch (effect.kind) {
-        case "status":
-          applyStatus(target, { type: effect.type }, 100);
-          break;
-
-        case "volatile-status":
-          const volatile = formatVolatileStatus(effect.type, effect.turns || 2);
-          if (target === player) setPlayer(prev => applyVolatileEffect(prev, volatile));
-          else setEnemy(prev => applyVolatileEffect(prev, volatile));
-          break;
-
-        case "stat-change":
-          applyStatChange(target, effect.stat, effect.amount);
-          break;
-      }
+    // controlla se mossa è item
+    if (move.isItem) {
+      useItem(move);
+      return;
     }
-  });
-}
+
+    // calcolo danno
+    const damage = trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender);
+    updateHp(defender === player ? "player" : "enemy", "-", damage);
+    console.log(`${attacker.data.name} usa ${move.name} e infligge ${damage} danni a ${defender.data.name}`);
+
+    // applica effetti secondari
+    move.effects.forEach(effect => {
+      if (generateRandomId(100) <= (effect.chance || 100)) { // probabilità
+        const target = effect.target === "user" ? attacker : defender;
+
+        switch (effect.kind) {
+          case "status":
+            applyStatus(target, { type: effect.type }, 100);
+            break;
+
+          case "volatile-status":
+            const volatile = formatVolatileStatus(effect.type, effect.turns || 2);
+            if (target === player) setPlayer(prev => applyVolatileEffect(prev, volatile));
+            else setEnemy(prev => applyVolatileEffect(prev, volatile));
+            break;
+
+          case "stat-change":
+            applyStatChange(target, effect.stat, effect.amount);
+            break;
+        }
+      }
+    });
+  }
 
   function applyEffects(effects, attacker, defender) {
     effects.forEach(effect => {
@@ -611,7 +611,7 @@ function App() {
   function statusHandler(pokemon) {
     switch (pokemon.status) {
       case "poison":
-        
+
         break;
 
       case "paralysis":
@@ -646,16 +646,16 @@ function App() {
     }
 
     if (move.meta?.ailment && move.meta.ailment.name !== "none") {
-    const kind = move.meta.ailment.name === "confusion" ? "volatile-status" : "status";
-    effects.push({
+      const kind = move.meta.ailment.name === "confusion" ? "volatile-status" : "status";
+      effects.push({
         kind,
         type: move.meta.ailment.name,
-        chance: move.meta.ailment_chance, 
+        chance: move.meta.ailment_chance,
         target: move.target.name
-    });
-}
+      });
+    }
 
-  return effects;
+    return effects;
 
   }
 
@@ -703,12 +703,12 @@ function App() {
   }
 
   function decrementConfusion(pokemon) {
-  if (pokemon.volatileStatus && pokemon.volatileStatus.turns > 0) {
-    const newTurns = pokemon.volatileStatus.turns - 1;
-    if (pokemon === player) setPlayer(prev => ({ ...prev, volatileStatus: { ...prev.volatileStatus, turns: newTurns } }));
-    else setEnemy(prev => ({ ...prev, volatileStatus: { ...prev.volatileStatus, turns: newTurns } }));
+    if (pokemon.volatileStatus && pokemon.volatileStatus.turns > 0) {
+      const newTurns = pokemon.volatileStatus.turns - 1;
+      if (pokemon === player) setPlayer(prev => ({ ...prev, volatileStatus: { ...prev.volatileStatus, turns: newTurns } }));
+      else setEnemy(prev => ({ ...prev, volatileStatus: { ...prev.volatileStatus, turns: newTurns } }));
+    }
   }
-}
 
   function clearVolatileStatus(target) {
     if (target === player) {
@@ -723,79 +723,79 @@ function App() {
   }
 
   function handleVolatileStatus(pokemon) {
-  // --- CONFUSIONE ---
-  const confusionIndex = pokemon.volatileStatus.findIndex(s => s.type === "confusion");
-  if (confusionIndex !== -1) {
-    const confusion = pokemon.volatileStatus[confusionIndex];
+    // --- CONFUSIONE ---
+    const confusionIndex = pokemon.volatileStatus.findIndex(s => s.type === "confusion");
+    if (confusionIndex !== -1) {
+      const confusion = pokemon.volatileStatus[confusionIndex];
 
-    if (confusion.turns > 0) {
-      // decrementa i turni
-      const newTurns = confusion.turns - 1;
+      if (confusion.turns > 0) {
+        // decrementa i turni
+        const newTurns = confusion.turns - 1;
+        if (pokemon === player) {
+          setPlayer(prev => ({
+            ...prev,
+            volatileStatus: prev.volatileStatus.map((s, i) =>
+              i === confusionIndex ? { ...s, turns: newTurns } : s
+            )
+          }));
+        } else {
+          setEnemy(prev => ({
+            ...prev,
+            volatileStatus: prev.volatileStatus.map((s, i) =>
+              i === confusionIndex ? { ...s, turns: newTurns } : s
+            )
+          }));
+        }
+
+        // 50% di chance di colpirsi da solo
+        if (generateRandomId(100) < 50) {
+          const selfDamage = Math.floor(pokemon.maxHp / 8);
+          console.log(`${pokemon.data.name} è confuso e si danneggia da solo!`);
+          updateHp(pokemon === player ? "player" : "enemy", "-", selfDamage);
+          return false; // turno saltato
+        }
+
+        console.log(`${pokemon.data.name} è confuso ma agisce normalmente!`);
+        return true; // il Pokémon può usare la mossa
+      } else {
+        // rimuove la confusione quando i turni finiscono
+        if (pokemon === player) {
+          setPlayer(prev => ({
+            ...prev,
+            volatileStatus: prev.volatileStatus.filter((_, i) => i !== confusionIndex)
+          }));
+        } else {
+          setEnemy(prev => ({
+            ...prev,
+            volatileStatus: prev.volatileStatus.filter((_, i) => i !== confusionIndex)
+          }));
+        }
+        console.log(`${pokemon.data.name} non è più confuso!`);
+        return true;
+      }
+    }
+
+    // --- FLINCH ---
+    const flinchIndex = pokemon.volatileStatus.findIndex(s => s.type === "flinch");
+    if (flinchIndex !== -1) {
+      console.log(`${pokemon.data.name} subisce Flinch e salta il turno!`);
+      // rimuove flinch subito dopo
       if (pokemon === player) {
         setPlayer(prev => ({
           ...prev,
-          volatileStatus: prev.volatileStatus.map((s, i) =>
-            i === confusionIndex ? { ...s, turns: newTurns } : s
-          )
+          volatileStatus: prev.volatileStatus.filter((_, i) => i !== flinchIndex)
         }));
       } else {
         setEnemy(prev => ({
           ...prev,
-          volatileStatus: prev.volatileStatus.map((s, i) =>
-            i === confusionIndex ? { ...s, turns: newTurns } : s
-          )
+          volatileStatus: prev.volatileStatus.filter((_, i) => i !== flinchIndex)
         }));
       }
-
-      // 50% di chance di colpirsi da solo
-      if (generateRandomId(100) < 50) {
-        const selfDamage = Math.floor(pokemon.maxHp / 8);
-        console.log(`${pokemon.data.name} è confuso e si danneggia da solo!`);
-        updateHp(pokemon === player ? "player" : "enemy", "-", selfDamage);
-        return false; // turno saltato
-      }
-
-      console.log(`${pokemon.data.name} è confuso ma agisce normalmente!`);
-      return true; // il Pokémon può usare la mossa
-    } else {
-      // rimuove la confusione quando i turni finiscono
-      if (pokemon === player) {
-        setPlayer(prev => ({
-          ...prev,
-          volatileStatus: prev.volatileStatus.filter((_, i) => i !== confusionIndex)
-        }));
-      } else {
-        setEnemy(prev => ({
-          ...prev,
-          volatileStatus: prev.volatileStatus.filter((_, i) => i !== confusionIndex)
-        }));
-      }
-      console.log(`${pokemon.data.name} non è più confuso!`);
-      return true;
+      return false; // turno saltato
     }
-  }
 
-  // --- FLINCH ---
-  const flinchIndex = pokemon.volatileStatus.findIndex(s => s.type === "flinch");
-  if (flinchIndex !== -1) {
-    console.log(`${pokemon.data.name} subisce Flinch e salta il turno!`);
-    // rimuove flinch subito dopo
-    if (pokemon === player) {
-      setPlayer(prev => ({
-        ...prev,
-        volatileStatus: prev.volatileStatus.filter((_, i) => i !== flinchIndex)
-      }));
-    } else {
-      setEnemy(prev => ({
-        ...prev,
-        volatileStatus: prev.volatileStatus.filter((_, i) => i !== flinchIndex)
-      }));
-    }
-    return false; // turno saltato
+    return true; // nessuno stato volatile blocca il turno
   }
-
-  return true; // nessuno stato volatile blocca il turno
-}
 
   function evaluateModifiers(attackerStats, defenderStats, move, attacker, defender) {
     let dmgMoltiplier = 1;
@@ -972,28 +972,43 @@ function App() {
     <>
       {!isGameOver &&
         <div className="container">
-          <div>STAGE: {stage}</div>
-          <p>{player.currentHp} / {player.maxHp}</p>
-          <p>{enemy.currentHp} / {enemy.maxHp}</p>
-          <img src={player.data?.sprites?.front_default} alt="" />
-          <img src={enemy.data?.sprites?.front_default} alt="" />
-          {playerMoveSet.map(move => (
-            <p
-              onClick={() => setSelectedMove(move)}
-              key={move.id}
-            >{move.name}</p>
+          <div className="fight">
+            <div className="player-healthbar-gray">
+              <div className="player-healthbar-green">
+                <p>{player.currentHp} / {player.maxHp}</p>
+              </div>
+            </div>
+            <div className="enemy-healthbar-gray">
+              <div className="enemy-healthbar-green">
+                <p>{enemy.currentHp} / {enemy.maxHp}</p>
+              </div>
+            </div>
+            <div className="player-sprite">
+              <img src={player.data?.sprites?.back_default} alt="" />
+            </div>
+            <div className="enemy-sprite">
+              <img src={enemy.data?.sprites?.front_default} alt="" />
+            </div>
+          </div>
+          <div className="bar">
+            {playerMoveSet.map(move => (
+              <p
+                onClick={() => setSelectedMove(move)}
+                key={move.id}
+              >{move.name}</p>
 
-          ))}
-          {playerInv.map(item => (
-            <p
-              onClick={() => setSelectedMove(item)}
-              key={item.data.id}
-            >{item.name}
-            </p>
-          ))}
-          <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats, enemyMoveSet)}>Confirm</button>
-          <p>Mossa attiva: {selectedMove?.name}</p>
-          <button onClick={() => startNewRun()}>Resetta Run</button>
+            ))}
+            {playerInv.map(item => (
+              <p
+                onClick={() => setSelectedMove(item)}
+                key={item.data.id}
+              >{item.name}
+              </p>
+            ))}
+            <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats, enemyMoveSet)}>Confirm</button>
+            <p>Mossa attiva: {selectedMove?.name}</p>
+            <button onClick={() => startNewRun()}>Resetta Run</button>
+          </div>
         </div>
       }
       {isGameOver &&
@@ -1003,6 +1018,7 @@ function App() {
           <button onClick={() => startNewRun()}>Nuova run</button>
         </div>
       }
+      <div>STAGE: {stage}</div>
     </>
   )
 }

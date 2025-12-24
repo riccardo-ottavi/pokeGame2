@@ -3,3 +3,83 @@
   padding: 0;
   box-sizing: border-box;
 }
+
+.container {
+  width: 800px;
+  height: 530px;
+  background-image: url("../public/background.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin: 0;
+  display: flex;
+  position: absolute;
+  flex-direction: column;
+}
+
+.container img {
+  width: 300px;
+}
+
+.bar {
+  margin-top: 120px;
+  margin-left: 40px;
+  display: flex;
+  position: absolute;
+  bottom: 70px;
+  left: 0;
+}
+
+.player-healthbar-gray {
+  width: 140px;
+  height: 11px;
+  background-color: rgb(102, 16, 214);
+  display: flex;
+  position: absolute;
+  bottom: 196px;
+  right: 118px;
+  border: solid black 1px;
+  border-radius: 33px;
+}
+
+.player-healthbar-green {
+  width: 100px;
+  height: 11px;
+  background-color: rgb(33, 214, 16);
+  display: flex;
+  position: absolute;
+
+}
+
+.enemy-healthbar-gray {
+  width: 140px;
+  height: 11px;
+  background-color: rgb(102, 16, 214);
+  display: flex;
+  position: absolute;
+  top: 113px;
+  left: 135px;
+  border: solid black 1px;
+  border-radius: 33px;
+}
+
+.enemy-healthbar-green {
+  width: 100px;
+  height: 11px;
+  background-color: rgb(33, 214, 16);
+  display: flex;
+  position: absolute;
+}
+
+.player-sprite {
+  display: flex;
+  position: absolute;
+  bottom: 90px;
+  left: 0;
+}
+
+.enemy-sprite {
+  display: flex;
+  position: absolute;
+  top: 0;
+  right: 90px;
+}
