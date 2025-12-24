@@ -534,51 +534,43 @@ function App() {
 
   //funzione principale del fight system, riceve una mossa o oggetto e sceglie come procedere 
   function useMove(attacker, move, defender, attackerStats, defenderStats) {
+  if (!move) return;
+  if (attacker.currentHp <= 0) return;
 
-    if (attacker.status !== null) {
-      statusHandler(attacker)
-    }
-
-    if (!move) return;
-    if (attacker.currentHp <= 0) return;
-
-    //controlli validità mossa
-    if (move.isItem) {
-      //qui sei sicuro che hai inviato un oggetto
-      useItem(move)
-
-      return
-    }
-
-    move.effects.forEach(effect => {
-      if (effect.kind === "persistent") {
-        const status = formatStatus(effect.type);
-        setEnemy(prev => applyStatus(prev, status));
-      }
-
-      if (effect.kind === "volatile-status") {
-        const volatile = formatVolatileStatus(effect.type, effect.turns);
-        setEnemy(prev => applyVolatileEffect(prev, volatile));
-      }
-    });
-
-    console.log(
-      attacker.data.name,
-      "deals",
-      trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender),
-      "to",
-      defender.data.name,
-      "using",
-      move.name
-    );
-
-    //applica eventuali danni
-    updateHp(
-      defender === player ? "player" : "enemy",
-      "-",
-      trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender)
-    );
+  // controlla se mossa è item
+  if (move.isItem) {
+    useItem(move);
+    return;
   }
+
+  // calcolo danno
+  const damage = trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender);
+  updateHp(defender === player ? "player" : "enemy", "-", damage);
+  console.log(`${attacker.data.name} usa ${move.name} e infligge ${damage} danni a ${defender.data.name}`);
+
+  // applica effetti secondari
+  move.effects.forEach(effect => {
+    if (generateRandomId(100) <= (effect.chance || 100)) { // probabilità
+      const target = effect.target === "user" ? attacker : defender;
+
+      switch (effect.kind) {
+        case "status":
+          applyStatus(target, { type: effect.type }, 100);
+          break;
+
+        case "volatile-status":
+          const volatile = formatVolatileStatus(effect.type, effect.turns || 2);
+          if (target === player) setPlayer(prev => applyVolatileEffect(prev, volatile));
+          else setEnemy(prev => applyVolatileEffect(prev, volatile));
+          break;
+
+        case "stat-change":
+          applyStatChange(target, effect.stat, effect.amount);
+          break;
+      }
+    }
+  });
+}
 
   function applyEffects(effects, attacker, defender) {
     effects.forEach(effect => {
@@ -653,7 +645,18 @@ function App() {
       });
     }
 
-    return effects;
+    if (move.meta?.ailment && move.meta.ailment.name !== "none") {
+    const kind = move.meta.ailment.name === "confusion" ? "volatile-status" : "status";
+    effects.push({
+        kind,
+        type: move.meta.ailment.name,
+        chance: move.meta.ailment_chance, 
+        target: move.target.name
+    });
+}
+
+  return effects;
+
   }
 
 
