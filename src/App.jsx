@@ -391,25 +391,100 @@ function App() {
   //controlla stato (paralizi, freeze ecc), usa mossa o item e poi applica status dmg(burn, poison ecc)
   function executePlayerTurn(player, enemy, playerStats, enemyStats, move) {
     if (!move) return;
-    startTurnStatusApply();
+    startTurnStatusApply(player);
     useMove(player, move, enemy, playerStats, enemyStats);
     endTurnStatusApply();
   }
 
   function executeEnemyTurn(enemy, player, enemyMoveSet, defenderStats, enemyStats) {
-    startTurnStatusApply();
+    startTurnStatusApply(enemy);
     useMove(enemy, enemyMoveSet[0], player, enemyStats, defenderStats)
     endTurnStatusApply();
   }
 
-  //paralisi, sonno ecc (se burn dimezza attacco)
-  function startTurnStatusApply(){
+  //danni da status a fine turno
+  function endTurnStatusApply() {
+    if (player.status === "burn") {
+      updateHp("player", "-", Math.floor(player.maxHp / 8));
+    }
+    if (enemy.status === "burn") {
+      updateHp("enemy", "-", Math.floor(enemy.maxHp / 8));
+    }
+
+    // Poison
+    if (player.status === "poison") {
+      updateHp("player", "-", Math.floor(player.maxHp / 8));
+    }
+    if (enemy.status === "poison") {
+      updateHp("enemy", "-", Math.floor(enemy.maxHp / 8));
+    }
 
   }
 
-  // poison/burn damage
-  function endTurnStatusApply(){
+  //ritorna true se riesce a fare la mossa o false se rimane bloccato dallo stato
+  function startTurnStatusApply(pokemon) {
+    console.log("status pokemon: ", pokemon.status);
 
+    const random = generateRandomId(100);
+
+    switch (pokemon.status) {
+      case "paralysis":
+        if (random <= 25) {
+          console.log(pokemon.data.name, "salta il turno (paralisi)!");
+          return false; //turno salta
+        }
+        break;
+
+      case "freeze":
+        if (pokemon.status === "freeze") {
+          const random = generateRandomId(100);
+          if (random <= 20) {
+            pokemon.status = null; // si scongela
+            console.log(pokemon.data.name, "si è scongelato!");
+            return true;
+          } else {
+            console.log(pokemon.data.name, "è congelato e salta il turno!");
+            return false;
+          }
+        }
+      case "sleep":
+        if (pokemon.status === "sleep") {
+          if (!pokemon.sleepTurns) {
+            pokemon.sleepTurns = generateRandomId(3) + 1; // dura 1-3 turni
+          }
+
+          if (pokemon.sleepTurns > 0) {
+            console.log(pokemon.data.name, "dorme e non può agire!");
+            pokemon.sleepTurns -= 1;
+            return false;
+          } else {
+            pokemon.status = null; // sveglio
+            console.log(pokemon.data.name, "si è svegliato!");
+            return true;
+          }
+        }
+      case "burn":
+        if (pokemon === player) {
+          setPlayer(prev => ({
+            ...prev,
+            statModifiers: {
+              ...prev.statModifiers,
+              attack: -1
+            }
+          }));
+        } else {
+          setEnemy(prev => ({
+            ...prev,
+            statModifiers: {
+              ...prev.statModifiers,
+              attack: -1
+            }
+          }));
+        }
+    }
+
+    console.log(pokemon.data.name, "fa il turno normalmente");
+    return true;
   }
 
 
@@ -478,7 +553,7 @@ function App() {
           break;
 
         case "status":
-          applyStatus(target, status, 100);
+          applyStatus(target, effect.status, 100);
           break;
       }
     });
@@ -486,24 +561,23 @@ function App() {
 
   //verifica se lo status entra e capisce a chi assegnarlo
   function applyStatus(target, newStatus, chance) {
-    if(chance >= generateRandomId(100)){
+    if (chance >= generateRandomId(100)) {
       if (target === "player") {
-      setPlayer(prev => ({
-        ...prev,
-        status: newStatus
-      }));
+        setPlayer(prev => ({
+          ...prev,
+          status: newStatus
+        }));
 
-    } else {
-      setEnemy(prev => ({
-        ...prev,
-        status: newStatus
-      }));
-    }
+      } else {
+        setEnemy(prev => ({
+          ...prev,
+          status: newStatus
+        }));
+      }
     }
   }
 
   function statusHandler(pokemon) {
-    console.log(pokemon.data.name, "inzia il turno con questo status:! ", pokemon.status);
     switch (pokemon.status) {
       case "poison":
         updateHp(
