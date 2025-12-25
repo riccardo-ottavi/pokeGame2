@@ -975,12 +975,14 @@ function App() {
           <div className="fight">
             <div className="player-healthbar-gray">
               <div className="player-healthbar-green">
-                <p>{player.currentHp} / {player.maxHp}</p>
+                <p className='player-poke-name'>{player?.data?.name.toUpperCase()}</p>
+                <p className='player-hp-text-numbs'>{player?.currentHp} / {player.maxHp}</p>
               </div>
             </div>
             <div className="enemy-healthbar-gray">
               <div className="enemy-healthbar-green">
-                <p>{enemy.currentHp} / {enemy.maxHp}</p>
+                <p className='enemy-poke-name'>{enemy?.data?.name.toUpperCase()}</p>
+                <p className='enemy-hp-text-numbs'>{enemy.currentHp} / {enemy.maxHp}</p>
               </div>
             </div>
             <div className="player-sprite">

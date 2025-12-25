@@ -4,20 +4,38 @@
   box-sizing: border-box;
 }
 
+body {
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .container {
-  width: 800px;
+  width: 707px;
   height: 530px;
-  background-image: url("../public/background.png");
+  background-image: url("/background.png");
   background-size: contain;
   background-repeat: no-repeat;
-  margin: 0;
   display: flex;
+  align-items: center;
   position: absolute;
   flex-direction: column;
+  margin: 0 auto;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.fight{
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .container img {
-  width: 300px;
+  width: 210px;
 }
 
 .bar {
@@ -30,13 +48,13 @@
 }
 
 .player-healthbar-gray {
-  width: 140px;
+  width: 141px;
   height: 11px;
   background-color: rgb(102, 16, 214);
   display: flex;
   position: absolute;
   bottom: 196px;
-  right: 118px;
+  right: 22px;
   border: solid black 1px;
   border-radius: 33px;
 }
@@ -51,7 +69,7 @@
 }
 
 .enemy-healthbar-gray {
-  width: 140px;
+  width: 141px;
   height: 11px;
   background-color: rgb(102, 16, 214);
   display: flex;
@@ -74,12 +92,37 @@
   display: flex;
   position: absolute;
   bottom: 90px;
-  left: 0;
+  left: 90px;
 }
 
 .enemy-sprite {
   display: flex;
   position: absolute;
-  top: 0;
-  right: 90px;
+  top: 60px;
+  right: 80px;
+}
+
+.player-poke-name{
+  display: flex;
+  position: absolute;
+  bottom: 23px;
+  right: 100px;
+  font-size: 20px;
+}
+
+.player-hp-text-numbs{
+  margin-top: 17px;
+  font-size: 20px;
+}
+
+.enemy-poke-name{
+  display: flex;
+  position: absolute;
+  bottom: 23px;
+  right: 100px;
+  font-size: 20px;  
+}
+
+.enemy-hp-text-numbs{
+
 }
