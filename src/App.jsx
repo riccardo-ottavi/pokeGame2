@@ -1,5 +1,6 @@
 import './App.css'
 import { useEffect, useState } from 'react';
+import PlayerCard from './components/PlayerCard';
 
 function App() {
   //----------stati---------------
@@ -977,12 +978,13 @@ function App() {
               <div className="player-healthbar-green">
                 <p className='player-poke-name'>{player?.data?.name.toUpperCase()}</p>
                 <p className='player-hp-text-numbs'>{player?.currentHp} / {player.maxHp}</p>
+                 <p className='player-level'>Lv: {player.level}</p>
               </div>
             </div>
             <div className="enemy-healthbar-gray">
               <div className="enemy-healthbar-green">
                 <p className='enemy-poke-name'>{enemy?.data?.name.toUpperCase()}</p>
-                <p className='enemy-hp-text-numbs'>{enemy.currentHp} / {enemy.maxHp}</p>
+                <p className='enemy-level'>Lv: {enemy.level}</p>
               </div>
             </div>
             <div className="player-sprite">
@@ -1009,7 +1011,6 @@ function App() {
             ))}
             <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats, enemyMoveSet)}>Confirm</button>
             <p>Mossa attiva: {selectedMove?.name}</p>
-            <button onClick={() => startNewRun()}>Resetta Run</button>
           </div>
         </div>
       }
@@ -1021,6 +1022,9 @@ function App() {
         </div>
       }
       <div>STAGE: {stage}</div>
+      <PlayerCard 
+        pokemon={player}
+      />
     </>
   )
 }
