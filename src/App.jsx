@@ -566,19 +566,21 @@ function App() {
   }
 
   //dimmi che tipo di effetto produce e con quali parametri 
-  function buildEffects(move) {
+ function buildEffects(move) {
   const effects = [];
 
+  // 1️⃣ Status / Volatile status
   if (move.meta?.ailment && move.meta.ailment.name !== "none") {
-    const kind = move.meta.ailment.name === "confusion" ? "volatile-status" : "status";
+    const isVolatile = move.meta.ailment.name === "confusion";
     effects.push({
-      kind,
+      kind: isVolatile ? "volatile-status" : "status",
       type: move.meta.ailment.name,
-      chance: move.meta.ailment_chance,
+      chance: move.meta.ailment_chance || 100,
       target: move.target.name
     });
   }
 
+  // 2️⃣ Modificatori di stat
   if (move.stat_changes?.length > 0) {
     move.stat_changes.forEach(sc => {
       effects.push({
