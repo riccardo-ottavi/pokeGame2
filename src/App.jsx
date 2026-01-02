@@ -2,6 +2,7 @@ import './App.css'
 import { useEffect, useState } from 'react';
 import { typesEfficacy, idLimit } from './constants.js';
 import { fetchFromApi, fetchJson, generateRandomId } from './utils/api.js';
+import { calcStats, getStageMultiplier, evaluateModifiers, trueDmgCalculator, } from './utils/stats.js';
 import PlayerCard from './components/PlayerCard';
 
 function App() {
@@ -166,23 +167,6 @@ function App() {
     }
 
     return moveset;
-  }
-
-  //calcola le stats
-  function calcStats(statsData, level) {
-    const stats = {};
-
-    statsData.forEach(s => {
-      if (s.stat.name === "hp") {
-        stats.hp = Math.floor(((s.base_stat * 2 * level) / 100) + level + 10);
-      } else {
-        stats[s.stat.name] = Math.floor(((s.base_stat * 2 * level) / 100) + 5);
-      }
-    });
-
-    stats.hp += level + 5;
-
-    return stats;
   }
 
   //inizializza il moveset(andrà fatta una chiamata a /items)
@@ -480,55 +464,7 @@ function App() {
     return true; // nessuno stato volatile blocca il turno
   }
 
-  function evaluateModifiers(attackerStats, defenderStats, move, attacker, defender) {
-    let dmgMoltiplier = 1;
-    //verifica se la mossa fallisce doMovesFail()
-    const random = generateRandomId(100);
-    if (random >= move.accuracy) {
-      console.log("la mossa fallisce!")
-      return 0
-    }
-
-    //verifica se la mossa fa brutto colpo isCritical()
-    const random2 = generateRandomId(16);
-    if (random2 <= 1) {
-      console.log("Brutto colpo!")
-      return dmgMoltiplier *= 1.5
-    }
-
-    const moveType = move.type?.name;
-    const defenderTypes = defender.data.types.map(t => t.type.name);
-
-    const thisEfficacies = typesEfficacy.find(t => t.type === moveType);
-    if (!thisEfficacies) return dmgMoltiplier;
-
-    //verifica se la mossa è STAB
-    const attackerTypes = attacker.data.types.map(t => t.type.name);
-    if (attackerTypes.includes(moveType)) {
-      console.log("E' STAB!");
-      dmgMoltiplier *= 1.5;
-    }
-
-    defenderTypes.forEach(defType => {
-      if (thisEfficacies.noEff.includes(defType)) {
-        console.log("Non ha effetto!");
-        dmgMoltiplier *= 0;
-      } else if (thisEfficacies.super.includes(defType)) {
-        console.log("È superefficace!");
-        dmgMoltiplier *= 2;
-      } else if (thisEfficacies.notVery.includes(defType)) {
-        console.log("Non è molto efficace...");
-        dmgMoltiplier *= 0.5;
-      }
-    });
-
-    return dmgMoltiplier
-  }
-
-
-  function enemyIa(enemy, player, enemyMoveSet,) {
-
-  }
+  
 
   function updateHp(target, operator, amount) {
     const setter = target === "player" ? setPlayer : setEnemy;
@@ -586,19 +522,10 @@ function App() {
 
     return finalReward;
   }
-  function renderRunRecap(player, enemy, stage) {
-
-  }
-
-  //stabilisce se una mossa applica un effetto volatile o persistente
-  function isVolatileEffect() {
-
-  }
 
   function incrementStage(n) {
     setStage(prev => prev + n);
   }
-
 
   function trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender) {
 
@@ -619,7 +546,6 @@ function App() {
 
     return Math.floor(baseDamage * modifier);
   }
-
 
   function processTurnStatus(pokemon) {
     let canAct = true; // assume che il Pokémon possa agire
@@ -742,20 +668,10 @@ function App() {
     return canAct;
   }
 
-
-  //serve a gestire i danni quando le stats sono buffate
-  function getStageMultiplier(stage) {
-    if (stage >= 0) return (2 + stage) / 2;
-    return 2 / (2 - stage);
-  }
-
   //funzione che bilancia il gioco
   function getEnemyLevel(stage) {
     return 3 + stage;
   }
-
-  //main(---tests----)
-  //runGame()
 
   console.log("player: ", player, "enemy: ", enemy);
 
