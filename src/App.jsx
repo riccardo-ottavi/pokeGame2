@@ -132,83 +132,6 @@ function App() {
     }
   ];
 
-  //----------classi---------------
-
-  //inizializza classe per istanziare i pokemon effettivamente in gioco
-  class PokemonInstance {
-    constructor(id, level, maxHp, currentHp, status, data, exp) {
-      this.id = id;
-      this.level = level;
-      this.maxHp = maxHp;
-      this.currentHp = currentHp;
-      this.status = null;
-      this.volatileStatus = [];
-      this.data = data;
-      this.exp = exp;
-      this.expToNextLevel = Math.pow(this.level, 3);
-      this.statModifiers = {
-        attack: 0,
-        defense: 0,
-        speed: 0,
-        spAttack: 0,
-        spDefense: 0,
-        accuracy: 0,
-        evasion: 0
-      };
-    }
-  }
-
-  class Modifiers {
-    constructor(attacker, defender, move) {
-      this.attacker = attacker;
-      this.defender = defender;
-      this.move = move;
-    }
-  }
-
-  //gestisce la logica dei calcoli relativi alle statistiche
-  class Stats {
-    constructor(baseStat, level) {
-      this.baseStat = baseStat;
-      this.level = level;
-    }
-    get hp() {
-      return this.calcHp();
-    }
-    get speed() {
-      return this.calcSpeed();
-    }
-    get attack() {
-      return this.calcAttack();
-    }
-    get defense() {
-      return this.calcDefense();
-    }
-    calcHp() {
-      return Math.floor((2 * this.baseStat[0].base_stat * this.level) / 100) + this.level + 10;
-    }
-    calcSpeed() {
-      return Math.floor((2 * this.baseStat[5].base_stat * this.level) / 100 + 5);
-    }
-    calcAttack() {
-      return Math.floor((2 * this.baseStat[1].base_stat * this.level) / 100 + 5);
-    }
-    calcDefense() {
-      return Math.floor((2 * this.baseStat[2].base_stat * this.level) / 100 + 5);
-    }
-  }
-
-  //gestisce la logica degli oggetti
-  class Items {
-    constructor(data, outcomeText, healing) {
-      this.data = data;
-      this.outcomeText = outcomeText;
-      this.healing = healing;
-      this.name = this.data.name;
-      this.isItem = true;
-    }
-  }
-
   //effetti
   useEffect(() => {
     handleProgression();
@@ -251,61 +174,67 @@ function App() {
 
   //inizializza player e nemico con this. e gli aggiunge proprietà items e moveset
   async function firstInstancePokemon(target) {
-    //capisci se stai impostando player o enemy e assegna pokemon fetchato allo stato 
     if (target === "player") {
-      //istanzia un pokemon a caso
       const pokeId = generateRandomId(idLimit)
       const poke = await fetchFromApi("pokemon", pokeId);
 
-      //inizializza le statistiche in base al livello (inizialmente 5)
-      const playerStats = new Stats(poke.stats, 5);
+      const instanciatedPlayer = createPokemon({ id: pokeId, level: 5, data: poke });
+      setPlayer(instanciatedPlayer);
 
-      const instanciatedPlayer = new PokemonInstance(pokeId, 5, playerStats.hp, playerStats.hp, null, poke, 0);
-      setPlayer(instanciatedPlayer)
-      setPlayerStats(playerStats)
-      initializeMoveset(instanciatedPlayer, 2, "player")
+      const playerStatsObj = calcStats(poke.stats, 5);
+      setPlayerStats(playerStatsObj);
+
+      const moveNames = await initializeMoveset(instanciatedPlayer, 2);
+      setPlayer(prev => ({
+        ...prev,
+        moveset: moveNames
+      }));
+
       initializeItems("player", instanciatedPlayer);
 
-    } else {
-      //istanzia un pokemon a caso
-      const pokeId = generateRandomId(idLimit)
+    } else { // nemico
+      const pokeId = generateRandomId(idLimit);
       const poke = await fetchFromApi("pokemon", pokeId);
 
-      //inizializza le statistiche in base al livello (inizialmente 5)
-      const enemyLevel = getEnemyLevel(stage)
-      const enemyStats = new Stats(poke.stats, enemyLevel);
+      const enemyLevel = getEnemyLevel(stage);
 
-      const instanciatedEnemy = new PokemonInstance(pokeId, getEnemyLevel(stage), enemyStats.hp, enemyStats.hp, null, poke, 0);
-      setEnemy(instanciatedEnemy)
-      setEnemyStats(enemyStats)
-      initializeMoveset(instanciatedEnemy, 4, "enemy")
+      // calcola stats corrette
+      const enemyStatsObj = calcStats(poke.stats, enemyLevel);
+
+      // crea il nemico
+      const instanciatedEnemy = createPokemon({ id: pokeId, level: enemyLevel, data: poke });
+      instanciatedEnemy.currentHp = enemyStatsObj.hp;
+      instanciatedEnemy.maxHp = enemyStatsObj.hp;
+
+      setEnemy(instanciatedEnemy);
+      setEnemyStats(enemyStatsObj);
+
+      const moveNames = await initializeMoveset(instanciatedEnemy, 2);
+      setEnemy(prev => ({
+        ...prev,
+        moveset: moveNames
+      }));
     }
   }
 
+
   function instanciatePoke(playerInstance, newLevel, bonusExp) {
     const pokeData = playerInstance.data;
-
     const oldMaxHp = playerInstance.maxHp;
     const oldCurrentHp = playerInstance.currentHp;
 
-    const newStats = new Stats(pokeData.stats, newLevel);
+    const newStats = calcStats(pokeData.stats, newLevel);
     const newMaxHp = newStats.hp;
+    const newCurrentHp = Math.min(newMaxHp, oldCurrentHp + (newMaxHp - oldMaxHp));
 
-    const hpIncrease = newMaxHp - oldMaxHp;
-    const newCurrentHp = Math.min(
-      newMaxHp,
-      oldCurrentHp + hpIncrease
-    );
+    const newPlayer = createPokemon({ id: pokeData.id, level: newLevel, data: pokeData });
 
-    const newPlayer = new PokemonInstance(
-      pokeData.id,
-      newLevel,
-      newMaxHp,
-      newCurrentHp,
-      playerInstance.status,
-      pokeData,
-      bonusExp
-    );
+    // Mantieni Hp, exp, moveset e inventario
+    newPlayer.currentHp = newCurrentHp;
+    newPlayer.exp = bonusExp;
+    newPlayer.moveset = playerInstance.moveset;
+    newPlayer.items = playerInstance.items;
+    newPlayer.volatileStatus = playerInstance.volatileStatus;
 
     setPlayer(newPlayer);
     setPlayerStats(newStats);
@@ -321,69 +250,70 @@ function App() {
     const pokeId = generateRandomId(idLimit);
     const poke = await fetchFromApi("pokemon", pokeId);
     const enemyLevel = getEnemyLevel(newStage);
-    const enemyStats = new Stats(poke.stats, enemyLevel);
 
-    const newEnemy = new PokemonInstance(
-      pokeId,
-      enemyLevel,
-      enemyStats.hp,
-      enemyStats.hp,
-      null,
-      poke,
-      0
-    );
+    // calcolo stats corrette
+    const enemyStatsObj = calcStats(poke.stats, enemyLevel);
+
+    // creo il pokemon
+    const newEnemy = createPokemon({ id: pokeId, level: enemyLevel, data: poke });
+    newEnemy.currentHp = enemyStatsObj.hp;
+    newEnemy.maxHp = enemyStatsObj.hp;
 
     setEnemy(newEnemy);
-    setEnemyStats(enemyStats);
-    initializeMoveset(newEnemy, 2, "enemy");
+    setEnemyStats(enemyStatsObj);
+
+    const moveNames = await initializeMoveset(newEnemy, 2);
+    setEnemy(prev => ({
+      ...prev,
+      moveset: moveNames
+    }));
   }
 
   //inizializza il moveset 
-  async function initializeMoveset(pokemon, movesNumber, target) {
-    let maxRange = pokemon.data.moves.length;
-    let randomInt = Math.floor(Math.random() * maxRange);
+  async function initializeMoveset(pokemon, movesNumber) {
+    const moveset = [];
 
-    pokemon.moveset = [];
-    for (let i = 0; i < movesNumber; i++) {
-      let moveName;
-      do {
-        const randomInt = Math.floor(Math.random() * pokemon.data.moves.length);
-        moveName = pokemon.data.moves[randomInt].move.name;
-      } while (pokemon.moveset.includes(moveName));
+    while (moveset.length < movesNumber) {
+      const randomIndex = Math.floor(Math.random() * pokemon.data.moves.length);
+      const moveUrl = pokemon.data.moves[randomIndex].move.url;
 
-      pokemon.moveset.push(moveName);
+      if (!moveset.find(m => m.url === moveUrl)) {
+        const moveData = await fetchJson(moveUrl);
+        moveset.push(formatMove(moveData));
+      }
     }
 
+    return moveset;
+  }
 
-    //le chiamate trasformano la stringa in oggetto completo con info mosse come PP o Potenza
-    const promises = [];
-    for (let i = 0; i < pokemon.moveset.length; i++) {
-      const moveData = fetchFromApi("move", pokemon.moveset[i])
-      promises.push(moveData)
-    }
-    const moves = await Promise.all(promises)
-    const formattedMoves = moves.map(formatMove);
+  //calcola le stats
+  function calcStats(statsData, level) {
+    const stats = {};
 
-    if (target === "player") {
-      setPlayerMoveSet(formattedMoves)
-    } else {
-      setEnemyMoveSet(formattedMoves)
-    }
+    statsData.forEach(s => {
+      if (s.stat.name === "hp") {
+        stats.hp = Math.floor(((s.base_stat * 2 * level) / 100) + level + 10);
+      } else {
+        stats[s.stat.name] = Math.floor(((s.base_stat * 2 * level) / 100) + 5);
+      }
+    });
 
-    return moves
+    stats.hp += level + 5;
+
+    return stats;
   }
 
   //inizializza il moveset(andrà fatta una chiamata a /items)
   async function initializeItems() {
     const potion = await fetchFromApi("item", "potion")
     potion.quantity = 5;
-    const hpPotion = new Items(potion, "You healed for", 20)
-    setPlayerInv([hpPotion])
+    const hpPotion = createItem(potion, "You healed for", 20);
+    setPlayerInv([hpPotion]);
   }
 
   //------------fight system-------------
 
-  function sendPlayerChoice(attacker, defencer, attackerMove, playerStats, enemyStats, enemyMoveSet) {
+  function sendPlayerChoice(attacker, defencer, attackerMove, playerStats, enemyStats) {
     //controlla chi è più veloce
     if (chechWhoFaster(playerStats, enemyStats)) {
       console.log("sei più veloce!")
@@ -402,42 +332,48 @@ function App() {
   //controlla stato (paralizi, freeze ecc), usa mossa o item e poi applica status dmg(burn, poison ecc)
   function executePlayerTurn(player, enemy, playerStats, enemyStats, move) {
     if (!move) return;
-    if (!startTurnStatusApply(player)) return;
-    startTurnStatusApply(player);
+    if (!processTurnStatus(player)) return; // gestisce tutto e decide se il player salta
     useMove(player, move, enemy, playerStats, enemyStats);
-    endTurnStatusApply();
   }
 
   function executeEnemyTurn(enemy, player, enemyMoveSet, defenderStats, enemyStats) {
-    if (!startTurnStatusApply(player)) return;
-    startTurnStatusApply(enemy);
-    useMove(enemy, enemyMoveSet[0], player, enemyStats, defenderStats)
-    endTurnStatusApply();
+    if (!processTurnStatus(enemy)) return; // nemico salta se non può agire
+    useMove(enemy, enemyMoveSet[0], player, enemyStats, playerStats);
+  }
+
+  function createItem(data, outcomeText, healing) {
+    return {
+      data,
+      outcomeText,
+      healing,
+      name: data.name,
+      isItem: true
+    };
   }
 
   function createPokemon({ id, level, data }) {
-  const stats = calcStats(data.stats, level);
-  return {
-    id,
-    level,
-    data,
-    maxHp: stats.hp,
-    currentHp: stats.hp,
-    status: null,
-    volatileStatus: [],
-    exp: 0,
-    expToNextLevel: level ** 3,
-    statModifiers: {
-      attack: 0,
-      defense: 0,
-      speed: 0,
-      spAttack: 0,
-      spDefense: 0,
-      accuracy: 0,
-      evasion: 0
-    }
-  };
-}
+    const stats = calcStats(data.stats, level);
+    return {
+      id,
+      level,
+      data,
+      maxHp: stats.hp,
+      currentHp: stats.hp,
+      status: null,
+      volatileStatus: [],
+      exp: 0,
+      expToNextLevel: level ** 3,
+      statModifiers: {
+        attack: 0,
+        defense: 0,
+        speed: 0,
+        spAttack: 0,
+        spDefense: 0,
+        accuracy: 0,
+        evasion: 0
+      }
+    };
+  }
 
   //danni da status a fine turno
   function endTurnStatusApply() {
@@ -487,6 +423,7 @@ function App() {
 
       case "sleep":
         if (pokemon.status?.type === "sleep") {
+          pokemon.status.turns -= 1;
           if (pokemon.status.turns > 0) {
             decrementSleep(pokemon);
             return false;
@@ -524,6 +461,22 @@ function App() {
     return true;
   }
 
+  function clearStatus(pokemon) {
+    if (pokemon === player) setPlayer(prev => ({ ...prev, status: null }));
+    else setEnemy(prev => ({ ...prev, status: null }));
+  }
+
+  function removeVolatileStatus(pokemon, type) {
+    if (pokemon === player) setPlayer(prev => ({
+      ...prev,
+      volatileStatus: prev.volatileStatus.filter(v => v.type !== type)
+    }));
+    else setEnemy(prev => ({
+      ...prev,
+      volatileStatus: prev.volatileStatus.filter(v => v.type !== type)
+    }));
+  }
+
 
   function formatMove(move) {
     return {
@@ -543,10 +496,6 @@ function App() {
       type,
       turns
     };
-  }
-
-  function formatStatus(type) {
-    return { type }
   }
 
   function decrementSleep(pokemon) {
@@ -597,23 +546,6 @@ function App() {
     });
   }
 
-  function applyEffects(effects, attacker, defender) {
-    effects.forEach(effect => {
-      const target =
-        effect.target === "user" ? attacker : defender;
-
-      switch (effect.kind) {
-        case "stat-change":
-          applyStatChange(target, effect.stat, effect.amount);
-          break;
-
-        case "status":
-          applyStatus(target, effect.status, 100);
-          break;
-      }
-    });
-  }
-
   //verifica se lo status entra e capisce a chi assegnarlo
   function applyStatus(target, newStatus, chance) {
     if (target.status !== null) return target;
@@ -633,56 +565,33 @@ function App() {
     }
   }
 
-  function statusHandler(pokemon) {
-    switch (pokemon.status) {
-      case "poison":
-
-        break;
-
-      case "paralysis":
-        // 25% di saltare il turno
-        break;
-    }
-  }
-
   //dimmi che tipo di effetto produce e con quali parametri 
   function buildEffects(move) {
-    const effects = [];
+  const effects = [];
 
-    if (move.meta?.ailment && move.meta.ailment.name !== "none") {
-      const kind = move.meta.ailment.name === "confusion" ? "volatile-status" : "status";
-      effects.push({
-        kind,
-        status: move.meta.ailment.name,
-        chance: move.meta.ailment_chance,
-        target: move.target.name
-      });
-    }
-
-    if (move.stat_changes?.length > 0) {
-      move.stat_changes.forEach(sc => {
-        effects.push({
-          kind: "stat-change",
-          stat: sc.stat.name,
-          amount: sc.change,
-          target: move.target.name
-        });
-      });
-    }
-
-    if (move.meta?.ailment && move.meta.ailment.name !== "none") {
-      const kind = move.meta.ailment.name === "confusion" ? "volatile-status" : "status";
-      effects.push({
-        kind,
-        type: move.meta.ailment.name,
-        chance: move.meta.ailment_chance,
-        target: move.target.name
-      });
-    }
-
-    return effects;
-
+  if (move.meta?.ailment && move.meta.ailment.name !== "none") {
+    const kind = move.meta.ailment.name === "confusion" ? "volatile-status" : "status";
+    effects.push({
+      kind,
+      type: move.meta.ailment.name,
+      chance: move.meta.ailment_chance,
+      target: move.target.name
+    });
   }
+
+  if (move.stat_changes?.length > 0) {
+    move.stat_changes.forEach(sc => {
+      effects.push({
+        kind: "stat-change",
+        stat: sc.stat.name,
+        amount: sc.change,
+        target: move.target.name
+      });
+    });
+  }
+
+  return effects;
+}
 
 
 
@@ -725,26 +634,6 @@ function App() {
         volatileStatus
       ]
     };
-  }
-
-  function decrementConfusion(pokemon) {
-    if (pokemon.volatileStatus && pokemon.volatileStatus.turns > 0) {
-      const newTurns = pokemon.volatileStatus.turns - 1;
-      if (pokemon === player) setPlayer(prev => ({ ...prev, volatileStatus: { ...prev.volatileStatus, turns: newTurns } }));
-      else setEnemy(prev => ({ ...prev, volatileStatus: { ...prev.volatileStatus, turns: newTurns } }));
-    }
-  }
-
-  function clearVolatileStatus(target) {
-    if (target === player) {
-      setPlayer(prev => {
-        return { ...prev, volatileStatus: [] }
-      });
-    } else {
-      setEnemy(prev => {
-        return { ...prev, volatileStatus: [] }
-      });
-    }
   }
 
   function handleVolatileStatus(pokemon) {
@@ -977,6 +866,129 @@ function App() {
     return Math.floor(baseDamage * modifier);
   }
 
+
+  function processTurnStatus(pokemon) {
+    let canAct = true; // assume che il Pokémon possa agire
+
+    // --- 1️⃣ Volatile Status ---
+    if (pokemon.volatileStatus?.length) {
+      // itera tutti i volatili
+      for (let i = pokemon.volatileStatus.length - 1; i >= 0; i--) {
+        const volatile = pokemon.volatileStatus[i];
+
+        switch (volatile.type) {
+          case "confusion":
+            if (volatile.turns > 0) {
+              // decrementa i turni
+              if (pokemon === player) {
+                setPlayer(prev => ({
+                  ...prev,
+                  volatileStatus: prev.volatileStatus.map((s, i) =>
+                    i === i ? { ...s, turns: s.turns - 1 } : s
+                  )
+                }));
+              } else {
+                setEnemy(prev => ({
+                  ...prev,
+                  volatileStatus: prev.volatileStatus.map((s, i) =>
+                    i === i ? { ...s, turns: s.turns - 1 } : s
+                  )
+                }));
+              }
+              if (generateRandomId(100) < 50) {
+                // si danneggia da solo
+                const selfDamage = Math.floor(pokemon.maxHp / 8);
+                console.log(`${pokemon.data.name} è confuso e si danneggia da solo!`);
+                updateHp(pokemon === player ? "player" : "enemy", "-", selfDamage);
+                canAct = false;
+              } else {
+                console.log(`${pokemon.data.name} è confuso ma agisce normalmente`);
+              }
+            } else {
+              // rimuove la confusione
+              removeVolatileStatus(pokemon, "confusion");
+              console.log(`${pokemon.data.name} non è più confuso!`);
+            }
+            break;
+
+          case "flinch":
+            console.log(`${pokemon.data.name} subisce Flinch e salta il turno!`);
+            removeVolatileStatus(pokemon, "flinch");
+            canAct = false;
+            break;
+
+          // qui puoi aggiungere altri volatili tipo "taunt", "disable" ecc.
+        }
+      }
+    }
+
+    // --- 2️⃣ Persistent Status ---
+    if (pokemon.status) {
+      switch (pokemon.status.type) {
+        case "paralysis":
+          if (generateRandomId(100) <= 25) {
+            console.log(`${pokemon.data.name} è paralizzato e salta il turno!`);
+            canAct = false;
+          }
+          break;
+
+        case "sleep":
+          if (pokemon.status.turns > 0) {
+            pokemon.status.turns -= 1;
+            console.log(`${pokemon.data.name} dorme ancora (${pokemon.status.turns} turni rimasti)`);
+            canAct = false;
+          } else {
+            clearStatus(pokemon);
+            console.log(`${pokemon.data.name} si sveglia!`);
+          }
+          break;
+
+        case "freeze":
+          if (generateRandomId(100) <= 20) {
+            clearStatus(pokemon);
+            console.log(`${pokemon.data.name} si è scongelato!`);
+          } else {
+            console.log(`${pokemon.data.name} è congelato e salta il turno!`);
+            canAct = false;
+          }
+          break;
+
+        case "burn":
+        case "poison":
+          // danni da status applicati all'inizio del turno
+          const dmg = Math.floor(pokemon.maxHp / 8);
+          console.log(`${pokemon.data.name} subisce danno da ${pokemon.status.type}: ${dmg}`);
+          updateHp(pokemon === player ? "player" : "enemy", "-", dmg);
+          break;
+      }
+    }
+
+    // --- 3️⃣ Stat modifiers da burn ---
+    if (pokemon.status?.type === "burn") {
+      // -1 attack
+      if (pokemon === player) {
+        setPlayer(prev => ({
+          ...prev,
+          statModifiers: {
+            ...prev.statModifiers,
+            attack: Math.max(-6, prev.statModifiers.attack - 1)
+          }
+        }));
+      } else {
+        setEnemy(prev => ({
+          ...prev,
+          statModifiers: {
+            ...prev.statModifiers,
+            attack: Math.max(-6, prev.statModifiers.attack - 1)
+          }
+        }));
+      }
+    }
+
+    return canAct;
+  }
+
+
   //serve a gestire i danni quando le stats sono buffate
   function getStageMultiplier(stage) {
     if (stage >= 0) return (2 + stage) / 2;
@@ -1002,7 +1014,7 @@ function App() {
               <div className="player-healthbar-green">
                 <p className='player-poke-name'>{player?.data?.name.toUpperCase()}</p>
                 <p className='player-hp-text-numbs'>{player?.currentHp} / {player.maxHp}</p>
-                 <p className='player-level'>Lv: {player.level}</p>
+                <p className='player-level'>Lv: {player.level}</p>
               </div>
             </div>
             <div className="enemy-healthbar-gray">
@@ -1019,7 +1031,7 @@ function App() {
             </div>
           </div>
           <div className="bar">
-            {playerMoveSet.map(move => (
+            {player.moveset?.map(move => (
               <p
                 onClick={() => setSelectedMove(move)}
                 key={move.id}
@@ -1033,7 +1045,7 @@ function App() {
               >{item.name}
               </p>
             ))}
-            <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats, enemyMoveSet)}>Confirm</button>
+            <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats)}>Confirm</button>
           </div>
         </div>
       }
@@ -1045,7 +1057,7 @@ function App() {
         </div>
       }
       <div>STAGE: {stage}</div>
-      <PlayerCard 
+      <PlayerCard
         pokemon={player}
       />
     </>
