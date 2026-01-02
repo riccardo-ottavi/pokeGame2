@@ -1,6 +1,7 @@
 import './App.css'
 import { useEffect, useState } from 'react';
-import { typesEfficacy, idLimit, baseUrl } from './constants.js';
+import { typesEfficacy, idLimit } from './constants.js';
+import { fetchFromApi, fetchJson, generateRandomId } from './utils/api.js';
 import PlayerCard from './components/PlayerCard';
 
 function App() {
@@ -125,12 +126,6 @@ function App() {
 
     setPlayer(newPlayer);
     setPlayerStats(newStats);
-  }
-
-  //fetcha qualcosa
-  async function fetchFromApi(category, id) {
-    const requestedPromise = await fetchJson(`${baseUrl}${category}/${id}`)
-    return requestedPromise
   }
 
   async function spawnNewEnemy(newStage) {
@@ -262,91 +257,6 @@ function App() {
     };
   }
 
-  //danni da status a fine turno
-  function endTurnStatusApply() {
-    if (player.status?.type === "burn") {
-      updateHp("player", "-", Math.floor(player.maxHp / 8));
-    }
-    if (enemy.status?.type === "burn") {
-      updateHp("enemy", "-", Math.floor(enemy.maxHp / 8));
-    }
-
-    // Poison
-    if (player.status?.type === "poison") {
-      updateHp("player", "-", Math.floor(player.maxHp / 8));
-    }
-    if (enemy.status?.type === "poison") {
-      updateHp("enemy", "-", Math.floor(enemy.maxHp / 8));
-    }
-
-  }
-
-  //ritorna true se riesce a fare la mossa o false se rimane bloccato dallo stato
-  function startTurnStatusApply(pokemon) {
-    console.log("status pokemon: ", pokemon.status, "status volatile pokemon: ", pokemon.volatileStatus);
-    if (!handleVolatileStatus(pokemon)) return false;
-    const random = generateRandomId(100);
-
-    switch (pokemon.status?.type) {
-      case "paralysis":
-        if (random <= 25) {
-          console.log(pokemon.data.name, "salta il turno (paralisi)!");
-          return false; //turno salta
-        }
-        break;
-
-      case "freeze":
-        if (pokemon.status?.type === "freeze") {
-          if (random <= 20) {
-            pokemon.status = null; // si scongela
-            console.log(pokemon.data.name, "si è scongelato!");
-            return true;
-          } else {
-            console.log(pokemon.data.name, "è congelato e salta il turno!");
-            return false;
-          }
-        }
-        break;
-
-      case "sleep":
-        if (pokemon.status?.type === "sleep") {
-          pokemon.status.turns -= 1;
-          if (pokemon.status.turns > 0) {
-            decrementSleep(pokemon);
-            return false;
-          } else {
-            clearStatus(pokemon);
-            return true;
-          }
-        }
-
-        break;
-
-      case "burn":
-        if (pokemon.status?.type === "burn") {
-          if (pokemon === player) {
-            setPlayer(prev => ({
-              ...prev,
-              statModifiers: {
-                ...prev.statModifiers,
-                attack: -1
-              }
-            }));
-          } else {
-            setEnemy(prev => ({
-              ...prev,
-              statModifiers: {
-                ...prev.statModifiers,
-                attack: -1
-              }
-            }));
-          }
-        }
-    }
-
-    console.log(pokemon.data.name, "fa il turno normalmente");
-    return true;
-  }
 
   function clearStatus(pokemon) {
     if (pokemon === player) setPlayer(prev => ({ ...prev, status: null }));
@@ -383,14 +293,6 @@ function App() {
       type,
       turns
     };
-  }
-
-  function decrementSleep(pokemon) {
-    if (pokemon.status && pokemon.status.turns > 0) {
-      const newTurns = pokemon.status.turns - 1;
-      if (pokemon === player) setPlayer(prev => ({ ...prev, status: { ...prev.status, turns: newTurns } }));
-      else setEnemy(prev => ({ ...prev, status: { ...prev.status, turns: newTurns } }));
-    }
   }
 
   //funzione principale del fight system, riceve una mossa o oggetto e sceglie come procedere 
@@ -721,19 +623,6 @@ function App() {
     setStage(prev => prev + n);
   }
 
-  //----------utilities---------------
-  // id casuale per randomizzare da 0 a un limite 
-  function generateRandomId(max) {
-    const random = Math.round(Math.random() * max);
-    return random
-  }
-
-  //parsa le response in obj JSON
-  async function fetchJson(url) {
-    const response = await fetch(url);
-    const obj = await response.json();
-    return obj
-  }
 
   function trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender) {
 
