@@ -35,7 +35,7 @@ function App() {
 
   // Enemy muore → incrementa stage e spawn nuovo nemico
   useEffect(() => {
-    if (enemy.currentHp <= 0) {
+    if (enemy?.currentHp <= 0 && enemy?.data) {
       console.log("Complimenti!", enemy.data.name, "è esausto");
       generateReward(stage, enemy, player);
       incrementStage(1);
@@ -43,7 +43,7 @@ function App() {
   }, [enemy.currentHp, isGameOver]);
 
   useEffect(() => {
-    if (player.currentHp <= 0) {
+    if (player?.currentHp <= 0 && player?.data) {
       setIsGameOver(true);
       setStage(1);
     }
@@ -195,33 +195,33 @@ function App() {
 
   //------------fight system-------------
 
-  function sendPlayerChoice(attacker, defencer, attackerMove, playerStats, enemyStats) {
-    //controlla chi è più veloce
-    if (chechWhoFaster(playerStats, enemyStats)) {
-      console.log("sei più veloce!")
-      executePlayerTurn(attacker, defencer, playerStats, enemyStats, attackerMove)
-      executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
-
-    }
-    else {
-      console.log("sei più lento!")
-      executeEnemyTurn(defencer, attacker, enemyMoveSet, playerStats, enemyStats)
-      executePlayerTurn(attacker, defencer, playerStats, enemyStats, attackerMove)
-
-    }
+  function sendPlayerChoice(attackerName, defenderName, move, playerStats, enemyStats) {
+  if (chechWhoFaster(playerStats, enemyStats)) {
+    executePlayerTurn(attackerName, defenderName, playerStats, enemyStats, move);
+    executeEnemyTurn(defenderName, attackerName, playerStats, enemyStats);
+  } else {
+    executeEnemyTurn(defenderName, attackerName, playerStats, enemyStats);
+    executePlayerTurn(attackerName, defenderName, playerStats, enemyStats, move);
   }
+}
 
   //controlla stato (paralizi, freeze ecc), usa mossa o item e poi applica status dmg(burn, poison ecc)
-  function executePlayerTurn(player, enemy, playerStats, enemyStats, move) {
+  function executePlayerTurn(attackerName, defenderName, playerStats, enemyStats, move) {
     if (!move) return;
-    if (!processTurnStatus(player)) return; // gestisce tutto e decide se il player salta
-    useMove(player, move, enemy, playerStats, enemyStats);
+    if (!processTurnStatus(attackerName === "player" ? player : enemy)) return;
+    useMove(attackerName === "player" ? player : enemy, move, defenderName, playerStats, enemyStats);
   }
 
-  function executeEnemyTurn(enemy, player, enemyMoveSet, defenderStats, enemyStats) {
-    if (!processTurnStatus(enemy)) return; // nemico salta se non può agire
-    useMove(enemy, enemyMoveSet[0], player, enemyStats, playerStats);
-  }
+  function executeEnemyTurn(attackerName, defenderName, defenderStats, attackerStats) {
+  const attacker = attackerName === "player" ? player : enemy;
+  const defender = defenderName === "player" ? player : enemy;
+  if (!processTurnStatus(attacker)) return;
+
+  const move = attacker.moveset?.[0]; // prende la prima mossa disponibile
+  if (!move) return;
+
+  useMove(attacker, move, defenderName, attackerStats, defenderStats);
+}
 
   function createItem(data, outcomeText, healing) {
     return {
@@ -296,43 +296,21 @@ function App() {
   }
 
   //funzione principale del fight system, riceve una mossa o oggetto e sceglie come procedere 
-  function useMove(attacker, move, defender, attackerStats, defenderStats) {
+  function useMove(attacker, move, defenderName, attackerStats, defenderStats) {
     if (!move) return;
     if (attacker.currentHp <= 0) return;
 
-    // controlla se mossa è item
     if (move.isItem) {
       useItem(move);
       return;
     }
 
-    // calcolo danno
+    const defender = defenderName === "player" ? player : enemy;
+
     const damage = trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender);
-    updateHp(defender === player ? "player" : "enemy", "-", damage);
+    updateHp(defenderName, "-", damage);
+
     console.log(`${attacker.data.name} usa ${move.name} e infligge ${damage} danni a ${defender.data.name}`);
-
-    // applica effetti secondari
-    move.effects.forEach(effect => {
-      if (generateRandomId(100) <= (effect.chance || 100)) { // probabilità
-        const target = effect.target === "user" ? attacker : defender;
-
-        switch (effect.kind) {
-          case "status":
-            applyStatus(target, { type: effect.type }, 100);
-            break;
-
-          case "volatile-status":
-            const volatile = formatVolatileStatus(effect.type, effect.turns || 2);
-            if (target === player) setPlayer(prev => applyVolatileEffect(prev, volatile));
-            else setEnemy(prev => applyVolatileEffect(prev, volatile));
-            break;
-
-          case "stat-change":
-            applyStatChange(target, effect.stat, effect.amount);
-            break;
-        }
-      }
-    });
   }
 
   //verifica se lo status entra e capisce a chi assegnarlo
@@ -355,34 +333,34 @@ function App() {
   }
 
   //dimmi che tipo di effetto produce e con quali parametri 
- function buildEffects(move) {
-  const effects = [];
+  function buildEffects(move) {
+    const effects = [];
 
-  // 1️⃣ Status / Volatile status
-  if (move.meta?.ailment && move.meta.ailment.name !== "none") {
-    const isVolatile = move.meta.ailment.name === "confusion";
-    effects.push({
-      kind: isVolatile ? "volatile-status" : "status",
-      type: move.meta.ailment.name,
-      chance: move.meta.ailment_chance || 100,
-      target: move.target.name
-    });
-  }
-
-  // 2️⃣ Modificatori di stat
-  if (move.stat_changes?.length > 0) {
-    move.stat_changes.forEach(sc => {
+    // 1️⃣ Status / Volatile status
+    if (move.meta?.ailment && move.meta.ailment.name !== "none") {
+      const isVolatile = move.meta.ailment.name === "confusion";
       effects.push({
-        kind: "stat-change",
-        stat: sc.stat.name,
-        amount: sc.change,
+        kind: isVolatile ? "volatile-status" : "status",
+        type: move.meta.ailment.name,
+        chance: move.meta.ailment_chance || 100,
         target: move.target.name
       });
-    });
-  }
+    }
 
-  return effects;
-}
+    // 2️⃣ Modificatori di stat
+    if (move.stat_changes?.length > 0) {
+      move.stat_changes.forEach(sc => {
+        effects.push({
+          kind: "stat-change",
+          stat: sc.stat.name,
+          amount: sc.change,
+          target: move.target.name
+        });
+      });
+    }
+
+    return effects;
+  }
 
 
 
@@ -554,19 +532,17 @@ function App() {
 
   function updateHp(target, operator, amount) {
     const setter = target === "player" ? setPlayer : setEnemy;
-    setter(prev => {
-      const newHp =
-        operator === "+"
-          ? prev.currentHp + amount
-          : prev.currentHp - amount;
 
-      return {
-        ...prev,
-        currentHp: Math.max(0, Math.min(prev.maxHp, newHp))
-      };
+    setter(prev => {
+      const newHp = operator === "+"
+        ? Math.min(prev.maxHp, prev.currentHp + amount)
+        : Math.max(0, prev.currentHp - amount);
+
+      console.log(`${prev.data.name} HP: ${prev.currentHp} → ${newHp}`);
+
+      return { ...prev, currentHp: newHp };
     });
   }
-
   //se il player è più veloce ritorna true
   function chechWhoFaster(playerStats, enemyStats) {
     if (playerStats.speed > enemyStats.speed) {
@@ -823,7 +799,7 @@ function App() {
               >{item.name}
               </p>
             ))}
-            <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats)}>Confirm</button>
+            <button onClick={() => sendPlayerChoice("player", "enemy", selectedMove, playerStats, enemyStats)}>Confirm</button>
           </div>
         </div>
       }
