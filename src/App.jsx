@@ -415,6 +415,30 @@ function App() {
     endTurnStatusApply();
   }
 
+  function createPokemon({ id, level, data }) {
+  const stats = calcStats(data.stats, level);
+  return {
+    id,
+    level,
+    data,
+    maxHp: stats.hp,
+    currentHp: stats.hp,
+    status: null,
+    volatileStatus: [],
+    exp: 0,
+    expToNextLevel: level ** 3,
+    statModifiers: {
+      attack: 0,
+      defense: 0,
+      speed: 0,
+      spAttack: 0,
+      spDefense: 0,
+      accuracy: 0,
+      evasion: 0
+    }
+  };
+}
+
   //danni da status a fine turno
   function endTurnStatusApply() {
     if (player.status?.type === "burn") {
@@ -1010,7 +1034,6 @@ function App() {
               </p>
             ))}
             <button onClick={() => sendPlayerChoice(player, enemy, selectedMove, playerStats, enemyStats, enemyMoveSet)}>Confirm</button>
-            <p>Mossa attiva: {selectedMove?.name}</p>
           </div>
         </div>
       }

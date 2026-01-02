@@ -4,11 +4,19 @@
   box-sizing: border-box;
 }
 
+@font-face {
+  font-family: "PokemonGB";
+  src: url("./assets/fonts/PokemonGB.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
 body {
   margin: 0 auto;
   display: flex;
   justify-content: center;
   align-items: center;
+  font-family: "PokemonGB", monospace;
 }
 
 .container {
@@ -25,6 +33,15 @@ body {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+}
+
+.pokemon-text {
+  font-family: "PokemonGB", monospace;
+  font-size: 14px;
+  line-height: 1.2;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 .fight{
@@ -91,7 +108,7 @@ body {
 .player-sprite {
   display: flex;
   position: absolute;
-  bottom: 90px;
+  bottom: 100px;
   left: 90px;
 }
 
