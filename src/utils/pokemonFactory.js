@@ -1,27 +1,28 @@
 import { calcStats, getStageMultiplier, evaluateModifiers, trueDmgCalculator, } from './stats.js';
 
-export function createPokemon({ id, level, data }) {
-    const stats = extractStats(data, level);
+export function createPokemon({ id, level, data, exp = 0 }) {
+  const stats = extractStats(data, level);
 
-    return {
-        id,
-        level,
-        data,
-        stats,
-        maxHp: stats.hp,
-        currentHp: stats.hp,
-        statModifiers: {
-            attack: 0,
-            defense: 0,
-            spAttack: 0,
-            spDefense: 0,
-            speed: 0
-        },
-        status: null,
-        volatileStatus: [],
-        moveset: []
-    };
+  return {
+    id,
+    level,
+    data,
+    stats,
+    maxHp: stats.hp,
+    currentHp: stats.hp,
+    statModifiers: { attack:0, defense:0, spAttack:0, spDefense:0, speed:0 },
+    status: null,
+    volatileStatus: [],
+    moveset: [],
+    exp, // EXP corrente
+    expToNextLevel: calculateExpToNextLevel(level) // funzione helper
+  };
 }
+
+export function calculateExpToNextLevel(level) {
+  return Math.floor(50 * Math.pow(1.2, level - 1));
+}
+
 
 export function extractStats(pokeData, level) {
     const get = name =>
@@ -49,22 +50,28 @@ export function createItem(data, outcomeText, healing) {
 }
 
 export function instanciatePoke(playerInstance, newLevel, bonusExp) {
-    const pokeData = playerInstance.data;
-    const oldMaxHp = playerInstance.maxHp;
-    const oldCurrentHp = playerInstance.currentHp;
+  const pokeData = playerInstance.data;
+  const oldMaxHp = playerInstance.maxHp;
+  const oldCurrentHp = playerInstance.currentHp;
 
-    const newStats = calcStats(pokeData.stats, newLevel);
-    const newMaxHp = newStats.hp;
-    const newCurrentHp = Math.min(newMaxHp, oldCurrentHp + (newMaxHp - oldMaxHp));
+  const newStats = calcStats(pokeData.stats, newLevel);
+  const newMaxHp = newStats.hp;
 
-    const newPlayer = createPokemon({ id: pokeData.id, level: newLevel, data: pokeData });
+  // Mantieni HP correnti proporzionalmente al nuovo max
+  const newCurrentHp = Math.min(newMaxHp, oldCurrentHp + (newMaxHp - oldMaxHp));
 
-    // Mantieni Hp, exp, moveset e inventario
-    newPlayer.currentHp = newCurrentHp;
-    newPlayer.exp = bonusExp;
-    newPlayer.moveset = playerInstance.moveset;
-    newPlayer.items = playerInstance.items;
-    newPlayer.volatileStatus = playerInstance.volatileStatus;
+  const newPlayer = createPokemon({ id: pokeData.id, level: newLevel, data: pokeData, exp: bonusExp });
+  newPlayer.expToNextLevel = calculateExpToNextLevel(newLevel);
 
-    setPlayer(newPlayer);
+  // Mantieni moveset, inventario, volatileStatus
+  newPlayer.moveset = playerInstance.moveset;
+  newPlayer.items = playerInstance.items;
+  newPlayer.volatileStatus = playerInstance.volatileStatus;
+
+  // Imposta HP corretti
+  newPlayer.maxHp = newMaxHp;
+  newPlayer.currentHp = newCurrentHp;
+
+  return { newPlayer, newStats };
 }
+

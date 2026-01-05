@@ -7,7 +7,8 @@ import { createPokemon, createItem, instanciatePoke } from './utils/pokemonFacto
 import { formatMove, buildEffects, initializeMoveset } from './utils/moves.js';
 import { processTurnStatus, handleVolatileStatus, applyStatus, applyVolatileEffect, removeVolatileStatus } from './utils/status.js';
 import { sendPlayerChoice, executeEnemyTurn, executePlayerTurn } from './utils/fightSystem.js';
-
+import { firstInstancePokemon, spawnNewEnemy, handleProgression, generateReward } from './utils/progression.js';
+import { incrementStage, getEnemyLevel } from './utils/progression.js';
 
 import PlayerCard from './components/PlayerCard';
 
@@ -35,17 +36,36 @@ function App() {
   // cambio stage → nuovo nemico
   useEffect(() => {
     if (stage > 1 && !isGameOver) {
-      spawnNewEnemy(stage);
+      spawnNewEnemy(stage, {
+        setEnemy,
+        setEnemyStats,
+        initializeMoveset,
+        getEnemyLevel
+      });
+
     }
   }, [stage]);
+
+  useEffect(() => {
+    handleProgression({
+      setPlayer,
+      setPlayerStats,
+      setEnemy,
+      setEnemyStats,
+      initializeItems
+    }, stage);
+  }, []);
 
 
   // Enemy muore → incrementa stage e spawn nuovo nemico
   useEffect(() => {
     if (enemy?.currentHp <= 0 && enemy?.data) {
       console.log("Complimenti!", enemy.data.name, "è esausto");
-      generateReward(stage, enemy, player);
-      incrementStage(1);
+
+      // Passiamo i setter invece del player
+      generateReward(stage, enemy, { setPlayer });
+
+      incrementStage(1, { setStage });
     }
   }, [enemy.currentHp, isGameOver]);
 
@@ -59,104 +79,43 @@ function App() {
   useEffect(() => {
     if (!player.exp) return;
 
+    // check level up
     if (player.exp >= player.expToNextLevel) {
       const bonusExp = player.exp - player.expToNextLevel;
-      instanciatePoke(player, player.level + 1, bonusExp);
+      const { newPlayer, newStats } = instanciatePoke(player, player.level + 1, bonusExp);
+      setPlayer(newPlayer);
+      setPlayerStats(newStats);
     }
   }, [player.exp]);
 
-  //----------inizializzazioni---------------
+  function handlePlayerMove() {
+    if (!selectedMove) return;
 
-  //inizializza player e nemico con this. e gli aggiunge proprietà items e moveset
-  async function firstInstancePokemon(target) {
-    if (target === "player") {
-      const pokeId = generateRandomId(idLimit)
-      const poke = await fetchFromApi("pokemon", pokeId);
+    // turno player
+    const result = sendPlayerChoice(player, enemy, selectedMove);
+    if (!result) return;
 
-      const instanciatedPlayer = createPokemon({ id: pokeId, level: 5, data: poke });
-      setPlayer(instanciatedPlayer);
+    // aggiorna HP nemico
+    setEnemy(prevEnemy => {
+      const newHp = Math.max(0, prevEnemy.currentHp - result.damage);
 
-      const playerStatsObj = calcStats(poke.stats, 5);
-      setPlayerStats(playerStatsObj);
+      return { ...prevEnemy, currentHp: newHp };
+    });
 
-      const moveNames = await initializeMoveset(instanciatedPlayer, 2);
-      setPlayer(prev => ({
-        ...prev,
-        moveset: moveNames
-      }));
+    // turno nemico con delay
+    setTimeout(() => {
+      setPlayer(prevPlayer => {
+        const enemyResult = executeEnemyTurn(enemy, prevPlayer);
+        if (!enemyResult) return prevPlayer;
 
-      initializeItems("player", instanciatedPlayer);
-
-    } else { // nemico
-      const pokeId = generateRandomId(idLimit);
-      const poke = await fetchFromApi("pokemon", pokeId);
-
-      const enemyLevel = getEnemyLevel(stage);
-
-      // calcola stats corrette
-      const enemyStatsObj = calcStats(poke.stats, enemyLevel);
-
-      // crea il nemico
-      const instanciatedEnemy = createPokemon({ id: pokeId, level: enemyLevel, data: poke });
-      instanciatedEnemy.currentHp = enemyStatsObj.hp;
-      instanciatedEnemy.maxHp = enemyStatsObj.hp;
-
-      setEnemy(instanciatedEnemy);
-      setEnemyStats(enemyStatsObj);
-
-      const moveNames = await initializeMoveset(instanciatedEnemy, 2);
-      setEnemy(prev => ({
-        ...prev,
-        moveset: moveNames
-      }));
-    }
+        return {
+          ...prevPlayer,
+          currentHp: Math.max(0, prevPlayer.currentHp - enemyResult.damage)
+        };
+      });
+    }, 500);
   }
 
-
-  function instanciatePoke(playerInstance, newLevel, bonusExp) {
-    const pokeData = playerInstance.data;
-    const oldMaxHp = playerInstance.maxHp;
-    const oldCurrentHp = playerInstance.currentHp;
-
-    const newStats = calcStats(pokeData.stats, newLevel);
-    const newMaxHp = newStats.hp;
-    const newCurrentHp = Math.min(newMaxHp, oldCurrentHp + (newMaxHp - oldMaxHp));
-
-    const newPlayer = createPokemon({ id: pokeData.id, level: newLevel, data: pokeData });
-
-    // Mantieni Hp, exp, moveset e inventario
-    newPlayer.currentHp = newCurrentHp;
-    newPlayer.exp = bonusExp;
-    newPlayer.moveset = playerInstance.moveset;
-    newPlayer.items = playerInstance.items;
-    newPlayer.volatileStatus = playerInstance.volatileStatus;
-
-    setPlayer(newPlayer);
-    setPlayerStats(newStats);
-  }
-
-  async function spawnNewEnemy(newStage) {
-    const pokeId = generateRandomId(idLimit);
-    const poke = await fetchFromApi("pokemon", pokeId);
-    const enemyLevel = getEnemyLevel(newStage);
-
-    // calcolo stats corrette
-    const enemyStatsObj = calcStats(poke.stats, enemyLevel);
-
-    // creo il pokemon
-    const newEnemy = createPokemon({ id: pokeId, level: enemyLevel, data: poke });
-    newEnemy.currentHp = enemyStatsObj.hp;
-    newEnemy.maxHp = enemyStatsObj.hp;
-
-    setEnemy(newEnemy);
-    setEnemyStats(enemyStatsObj);
-
-    const moveNames = await initializeMoveset(newEnemy, 2);
-    setEnemy(prev => ({
-      ...prev,
-      moveset: moveNames
-    }));
-  }
 
   //inizializza il moveset(andrà fatta una chiamata a /items)
   async function initializeItems() {
@@ -179,11 +138,7 @@ function App() {
     };
   }
 
-  //genera la progressione in rapporto agli stage 
-  async function handleProgression() {
-    await firstInstancePokemon("player");
-    await firstInstancePokemon("enemy");
-  }
+
 
   function startNewRun() {
     setIsGameOver(false);
@@ -192,24 +147,15 @@ function App() {
     setPlayerMoveSet([]);
     setEnemyMoveSet([]);
     setPlayerInv([]);
-    handleProgression();
+    handleProgression({
+      setPlayer,
+      setPlayerStats,
+      setEnemy,
+      setEnemyStats,
+      initializeItems
+    }, 1);
   }
 
-
-  //qua puoi bilanciare il gioco aumentando l'exp data dai nemici
-  function generateReward(stage, beatenEnemy, player) {
-    const finalReward = beatenEnemy.data.base_experience * (1 + stage / 4);
-    setPlayer(prev => {
-      const newExp = prev.exp + finalReward;
-      return { ...prev, exp: newExp };
-    });
-
-    return finalReward;
-  }
-
-  function incrementStage(n) {
-    setStage(prev => prev + n);
-  }
 
   function trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender) {
 
@@ -229,13 +175,6 @@ function App() {
     );
 
     return Math.floor(baseDamage * modifier);
-  }
-
-
-
-  //funzione che bilancia il gioco
-  function getEnemyLevel(stage) {
-    return 3 + stage;
   }
 
   console.log("player: ", player, "enemy: ", enemy);
@@ -280,34 +219,7 @@ function App() {
               >{item.name}
               </p>
             ))}
-            <button
-              onClick={() => {
-                if (!selectedMove) return;
-
-                // turno player
-                const result = sendPlayerChoice(player, enemy, selectedMove);
-                if (!result) return;
-
-                setEnemy(prev => {
-                  const newHp = Math.max(0, prev.currentHp - result.damage);
-
-                  // turno nemico subito dopo
-                  setTimeout(() => {
-                    const enemyResult = executeEnemyTurn(enemy, player);
-                    if (enemyResult) {
-                      setPlayer(prevPlayer => ({
-                        ...prevPlayer,
-                        currentHp: Math.max(0, prevPlayer.currentHp - enemyResult.damage)
-                      }));
-                    }
-                  }, 500); // mezzo secondo di delay per vedere l'attacco
-
-                  return { ...prev, currentHp: newHp };
-                });
-              }}
-            >
-              Confirm
-            </button>
+            <button onClick={handlePlayerMove}>Confirm</button>
           </div>
         </div>
       }
