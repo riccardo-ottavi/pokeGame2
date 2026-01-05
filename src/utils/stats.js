@@ -69,22 +69,19 @@ export function evaluateModifiers(attackerStats, defenderStats, move, attacker, 
     return dmgMoltiplier
 }
 
-export function trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender) {
+export function trueDmgCalculator(attacker, defender, move) {
+  const atk = attacker.stats.attack;
+  const def = defender.stats.defense;
 
-    const effectiveAttack = attackerStats.attack * getStageMultiplier(attacker.statModifiers.attack)
-    const effectiveDefense = defenderStats.defense * getStageMultiplier(defender.statModifiers.defense)
+  if (!atk || !def) {
+    console.error("Stats mancanti", attacker, defender);
+    return 0;
+  }
 
-    const baseDamage =
-        (((((2 * attacker.level) / 5 + 2) * move.power *
-            effectiveAttack / effectiveDefense) / 50) + 2);
+  const base = move.power || 0;
 
-    const modifier = evaluateModifiers(
-        attackerStats,
-        defenderStats,
-        move,
-        attacker,
-        defender
-    );
+  const damage =
+    Math.floor(((2 * attacker.level) / 5 + 2) * base * (atk / def) / 50) + 2;
 
-    return Math.floor(baseDamage * modifier);
+  return Math.max(1, damage);
 }

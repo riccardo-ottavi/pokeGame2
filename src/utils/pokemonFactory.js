@@ -1,28 +1,42 @@
 import { calcStats, getStageMultiplier, evaluateModifiers, trueDmgCalculator, } from './stats.js';
 
 export function createPokemon({ id, level, data }) {
-    const stats = calcStats(data.stats, level);
+    const stats = extractStats(data, level);
+
     return {
         id,
         level,
         data,
+        stats,
         maxHp: stats.hp,
         currentHp: stats.hp,
-        status: null,
-        volatileStatus: [],
-        exp: 0,
-        expToNextLevel: level ** 3,
         statModifiers: {
             attack: 0,
             defense: 0,
-            speed: 0,
             spAttack: 0,
             spDefense: 0,
-            accuracy: 0,
-            evasion: 0
-        }
+            speed: 0
+        },
+        status: null,
+        volatileStatus: [],
+        moveset: []
     };
 }
+
+export function extractStats(pokeData, level) {
+    const get = name =>
+        pokeData.stats.find(s => s.stat.name === name).base_stat;
+
+    return {
+        hp: Math.floor((get("hp") * level) / 50) + level + 10,
+        attack: Math.floor((get("attack") * level) / 50) + 5,
+        defense: Math.floor((get("defense") * level) / 50) + 5,
+        spAttack: Math.floor((get("special-attack") * level) / 50) + 5,
+        spDefense: Math.floor((get("special-defense") * level) / 50) + 5,
+        speed: Math.floor((get("speed") * level) / 50) + 5
+    };
+}
+
 
 export function createItem(data, outcomeText, healing) {
     return {
@@ -53,5 +67,4 @@ export function instanciatePoke(playerInstance, newLevel, bonusExp) {
     newPlayer.volatileStatus = playerInstance.volatileStatus;
 
     setPlayer(newPlayer);
-    setPlayerStats(newStats);
 }

@@ -6,6 +6,8 @@ import { calcStats, getStageMultiplier, evaluateModifiers, trueDmgCalculator, } 
 import { createPokemon, createItem, instanciatePoke } from './utils/pokemonFactory.js';
 import { formatMove, buildEffects, initializeMoveset } from './utils/moves.js';
 import { processTurnStatus, handleVolatileStatus, applyStatus, applyVolatileEffect, removeVolatileStatus } from './utils/status.js';
+import { sendPlayerChoice, executeEnemyTurn, executePlayerTurn } from './utils/fightSystem.js';
+
 
 import PlayerCard from './components/PlayerCard';
 
@@ -164,36 +166,6 @@ function App() {
     setPlayerInv([hpPotion]);
   }
 
-  //------------fight system-------------
-
-  function sendPlayerChoice(attackerName, defenderName, move, playerStats, enemyStats) {
-  if (chechWhoFaster(playerStats, enemyStats)) {
-    executePlayerTurn(attackerName, defenderName, playerStats, enemyStats, move);
-    executeEnemyTurn(defenderName, attackerName, playerStats, enemyStats);
-  } else {
-    executeEnemyTurn(defenderName, attackerName, playerStats, enemyStats);
-    executePlayerTurn(attackerName, defenderName, playerStats, enemyStats, move);
-  }
-}
-
-  //controlla stato (paralizi, freeze ecc), usa mossa o item e poi applica status dmg(burn, poison ecc)
-  function executePlayerTurn(attackerName, defenderName, playerStats, enemyStats, move) {
-    if (!move) return;
-    if (!processTurnStatus(attackerName === "player" ? player : enemy)) return;
-    useMove(attackerName === "player" ? player : enemy, move, defenderName, playerStats, enemyStats);
-  }
-
-  function executeEnemyTurn(attackerName, defenderName, defenderStats, attackerStats) {
-  const attacker = attackerName === "player" ? player : enemy;
-  const defender = defenderName === "player" ? player : enemy;
-  if (!processTurnStatus(attacker)) return;
-
-  const move = attacker.moveset?.[0]; // prende la prima mossa disponibile
-  if (!move) return;
-
-  useMove(attacker, move, defenderName, attackerStats, defenderStats);
-}
-
 
   function clearStatus(pokemon) {
     if (pokemon === player) setPlayer(prev => ({ ...prev, status: null }));
@@ -206,81 +178,6 @@ function App() {
       turns
     };
   }
-
-  //funzione principale del fight system, riceve una mossa o oggetto e sceglie come procedere 
-  function useMove(attacker, move, defenderName, attackerStats, defenderStats) {
-    if (!move) return;
-    if (attacker.currentHp <= 0) return;
-
-    if (move.isItem) {
-      useItem(move);
-      return;
-    }
-
-    const defender = defenderName === "player" ? player : enemy;
-
-    const damage = trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender);
-    updateHp(defenderName, "-", damage);
-
-    console.log(`${attacker.data.name} usa ${move.name} e infligge ${damage} danni a ${defender.data.name}`);
-  }
-
-
-  //applica cambiamenti alle statistiche 
-  function applyStatChange(target, stat, amount) {
-
-    if (target.data.name === player.data.name) {
-      setPlayer(prev => {
-        const newStages = { ...prev.statModifiers };
-        newStages[stat] = Math.max(-6, Math.min(6, newStages[stat] + amount));
-
-        return {
-          ...prev,
-          statModifiers: newStages
-        };
-      });
-    } else {
-      setEnemy(prev => {
-        const newStages = { ...prev.statModifiers };
-        newStages[stat] = Math.max(-6, Math.min(6, newStages[stat] + amount));
-
-        return {
-          ...prev,
-          statModifiers: newStages
-        };
-      });
-    }
-  }
-
-
-  function updateHp(target, operator, amount) {
-    const setter = target === "player" ? setPlayer : setEnemy;
-
-    setter(prev => {
-      const newHp = operator === "+"
-        ? Math.min(prev.maxHp, prev.currentHp + amount)
-        : Math.max(0, prev.currentHp - amount);
-
-      console.log(`${prev.data.name} HP: ${prev.currentHp} → ${newHp}`);
-
-      return { ...prev, currentHp: newHp };
-    });
-  }
-  //se il player è più veloce ritorna true
-  function chechWhoFaster(playerStats, enemyStats) {
-    if (playerStats.speed > enemyStats.speed) {
-      return true
-    } else {
-      return false
-    }
-  }
-
-  function useItem(item) {
-    console.log("Hai usato l' oggetto: ", item.name);
-    updateHp("player", "+", item.healing);
-  }
-
-  //----------progressione---------------
 
   //genera la progressione in rapporto agli stage 
   async function handleProgression() {
@@ -334,7 +231,7 @@ function App() {
     return Math.floor(baseDamage * modifier);
   }
 
-  
+
 
   //funzione che bilancia il gioco
   function getEnemyLevel(stage) {
@@ -383,7 +280,34 @@ function App() {
               >{item.name}
               </p>
             ))}
-            <button onClick={() => sendPlayerChoice("player", "enemy", selectedMove, playerStats, enemyStats)}>Confirm</button>
+            <button
+              onClick={() => {
+                if (!selectedMove) return;
+
+                // turno player
+                const result = sendPlayerChoice(player, enemy, selectedMove);
+                if (!result) return;
+
+                setEnemy(prev => {
+                  const newHp = Math.max(0, prev.currentHp - result.damage);
+
+                  // turno nemico subito dopo
+                  setTimeout(() => {
+                    const enemyResult = executeEnemyTurn(enemy, player);
+                    if (enemyResult) {
+                      setPlayer(prevPlayer => ({
+                        ...prevPlayer,
+                        currentHp: Math.max(0, prevPlayer.currentHp - enemyResult.damage)
+                      }));
+                    }
+                  }, 500); // mezzo secondo di delay per vedere l'attacco
+
+                  return { ...prev, currentHp: newHp };
+                });
+              }}
+            >
+              Confirm
+            </button>
           </div>
         </div>
       }
@@ -391,7 +315,6 @@ function App() {
         <div className="container">
           <h2>HAI PERSO!</h2>
           <p>Stage raggiunto: {stage}</p>
-          <button onClick={() => startNewRun()}>Nuova run</button>
         </div>
       }
       <div>STAGE: {stage}</div>
