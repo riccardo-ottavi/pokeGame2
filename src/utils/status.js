@@ -1,243 +1,193 @@
-export function processTurnStatus(pokemon) {
-    let canAct = true; // assume che il Pokémon possa agire
+import { generateRandomId } from "./api";
 
-    // --- 1️⃣ Volatile Status ---
-    if (pokemon.volatileStatus?.length) {
-        // itera tutti i volatili
-        for (let i = pokemon.volatileStatus.length - 1; i >= 0; i--) {
-            const volatile = pokemon.volatileStatus[i];
+/**
+ * Gestisce tutti gli effetti di status e volatili all'inizio del turno.
+ * Restituisce true se il Pokémon può agire, false se salta il turno.
+ */
+export function processTurnStatus(pokemon, setters) {
+   
+  let canAct = true;
 
-            switch (volatile.type) {
-                case "confusion":
-                    if (volatile.turns > 0) {
-                        // decrementa i turni
-                        if (pokemon === player) {
-                            setPlayer(prev => ({
-                                ...prev,
-                                volatileStatus: prev.volatileStatus.map((s, i) =>
-                                    i === i ? { ...s, turns: s.turns - 1 } : s
-                                )
-                            }));
-                        } else {
-                            setEnemy(prev => ({
-                                ...prev,
-                                volatileStatus: prev.volatileStatus.map((s, i) =>
-                                    i === i ? { ...s, turns: s.turns - 1 } : s
-                                )
-                            }));
-                        }
-                        if (generateRandomId(100) < 50) {
-                            // si danneggia da solo
-                            const selfDamage = Math.floor(pokemon.maxHp / 8);
-                            console.log(`${pokemon.data.name} è confuso e si danneggia da solo!`);
-                            updateHp(pokemon === player ? "player" : "enemy", "-", selfDamage);
-                            canAct = false;
-                        } else {
-                            console.log(`${pokemon.data.name} è confuso ma agisce normalmente`);
-                        }
-                    } else {
-                        // rimuove la confusione
-                        removeVolatileStatus(pokemon, "confusion");
-                        console.log(`${pokemon.data.name} non è più confuso!`);
-                    }
-                    break;
+  // --- 1️⃣ Volatile Status ---
+  pokemon.volatileStatus?.forEach((volatile, idx) => {
+    switch (volatile.type) {
+      case "confusion":
+        if (volatile.turns > 0) {
+          const newTurns = volatile.turns - 1;
+          const updateFn = pokemon.isPlayer ? setPlayer : setEnemy;
 
-                case "flinch":
-                    console.log(`${pokemon.data.name} subisce Flinch e salta il turno!`);
-                    removeVolatileStatus(pokemon, "flinch");
-                    canAct = false;
-                    break;
+          updateFn(prev => ({
+            ...prev,
+            volatileStatus: prev.volatileStatus.map((s, i) => i === idx ? { ...s, turns: newTurns } : s)
+          }));
 
-                // qui puoi aggiungere altri volatili tipo "taunt", "disable" ecc.
-            }
-        }
-    }
-
-    // --- 2️⃣ Persistent Status ---
-    if (pokemon.status) {
-        switch (pokemon.status.type) {
-            case "paralysis":
-                if (generateRandomId(100) <= 25) {
-                    console.log(`${pokemon.data.name} è paralizzato e salta il turno!`);
-                    canAct = false;
-                }
-                break;
-
-            case "sleep":
-                if (pokemon.status.turns > 0) {
-                    pokemon.status.turns -= 1;
-                    console.log(`${pokemon.data.name} dorme ancora (${pokemon.status.turns} turni rimasti)`);
-                    canAct = false;
-                } else {
-                    clearStatus(pokemon);
-                    console.log(`${pokemon.data.name} si sveglia!`);
-                }
-                break;
-
-            case "freeze":
-                if (generateRandomId(100) <= 20) {
-                    clearStatus(pokemon);
-                    console.log(`${pokemon.data.name} si è scongelato!`);
-                } else {
-                    console.log(`${pokemon.data.name} è congelato e salta il turno!`);
-                    canAct = false;
-                }
-                break;
-
-            case "burn":
-            case "poison":
-                // danni da status applicati all'inizio del turno
-                const dmg = Math.floor(pokemon.maxHp / 8);
-                console.log(`${pokemon.data.name} subisce danno da ${pokemon.status.type}: ${dmg}`);
-                updateHp(pokemon === player ? "player" : "enemy", "-", dmg);
-                break;
-        }
-    }
-
-    // --- 3️⃣ Stat modifiers da burn ---
-    if (pokemon.status?.type === "burn") {
-        // -1 attack
-        if (pokemon === player) {
-            setPlayer(prev => ({
-                ...prev,
-                statModifiers: {
-                    ...prev.statModifiers,
-                    attack: Math.max(-6, prev.statModifiers.attack - 1)
-                }
-            }));
+          // 50% chance di colpirsi da solo
+          if (generateRandomId(100) < 50) {
+            const selfDamage = Math.floor(pokemon.maxHp / 8);
+            console.log(`${pokemon.data.name} è confuso e si danneggia da solo!`);
+            updateHp(pokemon, "-", selfDamage);
+            canAct = false;
+          }
         } else {
-            setEnemy(prev => ({
-                ...prev,
-                statModifiers: {
-                    ...prev.statModifiers,
-                    attack: Math.max(-6, prev.statModifiers.attack - 1)
-                }
-            }));
+          removeVolatileStatus(pokemon, "confusion", setters);
         }
+        break;
+
+      case "flinch":
+        console.log(`${pokemon.data.name} salta il turno per Flinch!`);
+        removeVolatileStatus(pokemon, "flinch", setters);
+        canAct = false;
+        break;
+
+      // Aggiungere altri volatili qui
     }
+  });
 
-    return canAct;
-}
+  // --- 2️⃣ Persistent Status ---
+  if (pokemon.status) {
+    switch (pokemon.status.type) {
+      case "paralysis":
+        if (generateRandomId(100) <= 25) {
+          console.log(`${pokemon.data.name} è paralizzato e salta il turno!`);
+          canAct = false;
+        }
+        break;
 
-
-export function handleVolatileStatus(pokemon) {
-    // --- CONFUSIONE ---
-    const confusionIndex = pokemon.volatileStatus.findIndex(s => s.type === "confusion");
-    if (confusionIndex !== -1) {
-        const confusion = pokemon.volatileStatus[confusionIndex];
-
-        if (confusion.turns > 0) {
-            // decrementa i turni
-            const newTurns = confusion.turns - 1;
-            if (pokemon === player) {
-                setPlayer(prev => ({
-                    ...prev,
-                    volatileStatus: prev.volatileStatus.map((s, i) =>
-                        i === confusionIndex ? { ...s, turns: newTurns } : s
-                    )
-                }));
-            } else {
-                setEnemy(prev => ({
-                    ...prev,
-                    volatileStatus: prev.volatileStatus.map((s, i) =>
-                        i === confusionIndex ? { ...s, turns: newTurns } : s
-                    )
-                }));
-            }
-
-            // 50% di chance di colpirsi da solo
-            if (generateRandomId(100) < 50) {
-                const selfDamage = Math.floor(pokemon.maxHp / 8);
-                console.log(`${pokemon.data.name} è confuso e si danneggia da solo!`);
-                updateHp(pokemon === player ? "player" : "enemy", "-", selfDamage);
-                return false; // turno saltato
-            }
-
-            console.log(`${pokemon.data.name} è confuso ma agisce normalmente!`);
-            return true; // il Pokémon può usare la mossa
+      case "sleep":
+        if (pokemon.status.turns > 0) {
+          pokemon.status.turns -= 1;
+          console.log(`${pokemon.data.name} dorme ancora (${pokemon.status.turns} turni rimasti)`);
+          canAct = false;
         } else {
-            // rimuove la confusione quando i turni finiscono
-            if (pokemon === player) {
-                setPlayer(prev => ({
-                    ...prev,
-                    volatileStatus: prev.volatileStatus.filter((_, i) => i !== confusionIndex)
-                }));
-            } else {
-                setEnemy(prev => ({
-                    ...prev,
-                    volatileStatus: prev.volatileStatus.filter((_, i) => i !== confusionIndex)
-                }));
-            }
-            console.log(`${pokemon.data.name} non è più confuso!`);
-            return true;
+          clearStatus(pokemon, setters);
+          console.log(`${pokemon.data.name} si sveglia!`);
         }
-    }
+        break;
 
-    // --- FLINCH ---
-    const flinchIndex = pokemon.volatileStatus.findIndex(s => s.type === "flinch");
-    if (flinchIndex !== -1) {
-        console.log(`${pokemon.data.name} subisce Flinch e salta il turno!`);
-        // rimuove flinch subito dopo
-        if (pokemon === player) {
-            setPlayer(prev => ({
-                ...prev,
-                volatileStatus: prev.volatileStatus.filter((_, i) => i !== flinchIndex)
-            }));
+      case "freeze":
+        if (generateRandomId(100) <= 20) {
+          clearStatus(pokemon, setters);
+          console.log(`${pokemon.data.name} si è scongelato!`);
         } else {
-            setEnemy(prev => ({
-                ...prev,
-                volatileStatus: prev.volatileStatus.filter((_, i) => i !== flinchIndex)
-            }));
+          console.log(`${pokemon.data.name} è congelato e salta il turno!`);
+          canAct = false;
         }
-        return false; // turno saltato
+        break;
+
+      case "burn":
+      case "poison":
+        const dmg = Math.floor(pokemon.maxHp / 8);
+        console.log(`${pokemon.data.name} subisce danno da ${pokemon.status.type}: ${dmg}`);
+        updateHp(pokemon, "-", dmg);
+        break;
     }
+  }
 
-    return true; // nessuno stato volatile blocca il turno
-}
-
-//verifica se lo status entra e capisce a chi assegnarlo
-export function applyStatus(target, newStatus, chance) {
-    if (target.status !== null) return target;
-    if (chance >= generateRandomId(100)) {
-        if (target === player) {
-            setPlayer(prev => ({
-                ...prev,
-                status: newStatus
-            }));
-
-        } else if (target === enemy) {
-            setEnemy(prev => ({
-                ...prev,
-                status: newStatus
-            }));
-        }
-    }
-}
-
-export function applyVolatileEffect(pokemon, volatileStatus) {
-    const alreadyPresent = pokemon.volatileStatus
-        ?.some(s => s.type === volatileStatus.type);
-
-    if (alreadyPresent) return pokemon;
-
-    return {
-        ...pokemon,
-        volatileStatus: [
-            ...(pokemon.volatileStatus || []),
-            volatileStatus
-        ]
-    };
-}
-
-export function removeVolatileStatus(pokemon, type) {
-    if (pokemon === player) setPlayer(prev => ({
-        ...prev,
-        volatileStatus: prev.volatileStatus.filter(v => v.type !== type)
+  // --- 3️⃣ Stat modifiers da burn ---
+  if (pokemon.status?.type === "burn") {
+    const updateFn = pokemon.isPlayer ? setPlayer : setEnemy;
+    updateFn(prev => ({
+      ...prev,
+      statModifiers: {
+        ...prev.statModifiers,
+        attack: Math.max(-6, prev.statModifiers.attack - 1)
+      }
     }));
-    else setEnemy(prev => ({
-        ...prev,
-        volatileStatus: prev.volatileStatus.filter(v => v.type !== type)
-    }));
+  }
+
+  return canAct;
 }
 
+/**
+ * Rimuove un volatile dallo stato del Pokémon
+ */
+export function removeVolatileStatus(pokemon, type, setters) {
+  const { setPlayer, setEnemy } = setters;
+  const updateFn = pokemon.isPlayer ? setPlayer : setEnemy;
 
+  updateFn(prev => ({
+    ...prev,
+    volatileStatus: prev.volatileStatus.filter(v => v.type !== type)
+  }));
+}
+
+/**
+ * Applica uno status persistente a un Pokémon (paralysis, sleep, burn, ecc.)
+ */
+export function applyStatus(target, newStatus, chance, setters) {
+  if (target.status !== null) return;
+
+  if (chance >= generateRandomId(100)) {
+    const updateFn = target.isPlayer ? setters.setPlayer : setters.setEnemy;
+    updateFn(prev => ({ ...prev, status: newStatus }));
+  }
+}
+
+/**
+ * Applica uno status volatile (confusion, flinch, ecc.) a un Pokémon
+ */
+export function applyVolatileEffect(pokemon, volatileStatus, setters) {
+  const alreadyPresent = pokemon.volatileStatus?.some(s => s.type === volatileStatus.type);
+  if (alreadyPresent) return;
+
+  const updateFn = pokemon.isPlayer ? setters.setPlayer : setters.setEnemy;
+  updateFn(prev => ({
+    ...prev,
+    volatileStatus: [...(prev.volatileStatus || []), volatileStatus]
+  }));
+}
+
+/**
+ * Rimuove uno status persistente
+ */
+export function clearStatus(pokemon, setters) {
+  const updateFn = pokemon.isPlayer ? setters.setPlayer : setters.setEnemy;
+  updateFn(prev => ({ ...prev, status: null }));
+}
+
+/**
+ * Controlla tutti i volatili di un Pokémon e aggiorna i setter.
+ * Restituisce true se il Pokémon può agire, false se salta il turno.
+ */
+export function handleVolatileStatus(pokemon, setters) {
+  const { setPlayer, setEnemy, updateHp, removeVolatileStatus } = setters;
+  let canAct = true;
+
+  // --- CONFUSIONE ---
+  const confusionIndex = pokemon.volatileStatus?.findIndex(s => s.type === "confusion");
+  if (confusionIndex !== -1) {
+    const confusion = pokemon.volatileStatus[confusionIndex];
+
+    if (confusion.turns > 0) {
+      const newTurns = confusion.turns - 1;
+      const updateFn = pokemon.isPlayer ? setPlayer : setEnemy;
+
+      updateFn(prev => ({
+        ...prev,
+        volatileStatus: prev.volatileStatus.map((s, i) => i === confusionIndex ? { ...s, turns: newTurns } : s)
+      }));
+
+      if (generateRandomId(100) < 50) {
+        const selfDamage = Math.floor(pokemon.maxHp / 8);
+        console.log(`${pokemon.data.name} è confuso e si danneggia da solo!`);
+        updateHp(pokemon, "-", selfDamage);
+        canAct = false; // turno saltato
+      } else {
+        console.log(`${pokemon.data.name} è confuso ma agisce normalmente!`);
+      }
+    } else {
+      removeVolatileStatus(pokemon, "confusion", setters);
+      console.log(`${pokemon.data.name} non è più confuso!`);
+    }
+  }
+
+  // --- FLINCH ---
+  const flinchIndex = pokemon.volatileStatus?.findIndex(s => s.type === "flinch");
+  if (flinchIndex !== -1) {
+    console.log(`${pokemon.data.name} subisce Flinch e salta il turno!`);
+    removeVolatileStatus(pokemon, "flinch", setters);
+    canAct = false;
+  }
+
+  return canAct;
+}

@@ -9,6 +9,7 @@ import { processTurnStatus, handleVolatileStatus, applyStatus, applyVolatileEffe
 import { sendPlayerChoice, executeEnemyTurn, executePlayerTurn } from './utils/fightSystem.js';
 import { firstInstancePokemon, spawnNewEnemy, handleProgression, generateReward } from './utils/progression.js';
 import { incrementStage, getEnemyLevel } from './utils/progression.js';
+import { updateHp } from './utils/fightSystem.js';
 
 import PlayerCard from './components/PlayerCard';
 
@@ -23,12 +24,13 @@ function App() {
   const [playerMoveSet, setPlayerMoveSet] = useState([])
   const [enemyMoveSet, setEnemyMoveSet] = useState([])
   const [playerInv, setPlayerInv] = useState([])
-  const [ isPlayerTurn, setIsPlayerTurn] = useState(true)
+  const [isPlayerTurn, setIsPlayerTurn] = useState(true)
 
   const [selectedMove, setSelectedMove] = useState()
 
   //----------costanti---------------
 
+  const setters = { setPlayer, setEnemy, updateHp, clearStatus, removeVolatileStatus };
   //effetti
   useEffect(() => {
     handleProgression();
@@ -90,38 +92,45 @@ function App() {
   }, [player.exp]);
 
   function handlePlayerMove() {
-  if (!selectedMove) return;
-  if (player.currentHp <= 0) return; // Player già KO, niente mossa
-  if (enemy.currentHp <= 0) return;  // Nemico già KO, niente mossa
+    if (processTurnStatus(player, setters)) {
+      // può usare la mossa
+      if (!selectedMove) return;
+      if (player.currentHp <= 0) return; // Player già KO, niente mossa
+      if (enemy.currentHp <= 0) return;  // Nemico già KO, niente mossa
 
-  // turno player
-  const result = sendPlayerChoice(player, enemy, selectedMove);
-  if (!result) return;
+      // turno player
+      const result = sendPlayerChoice(player, enemy, selectedMove);
+      if (!result) return;
 
-  // aggiorna HP nemico
-  setEnemy(prevEnemy => {
-    const newHp = Math.max(0, prevEnemy.currentHp - result.damage);
-    return { ...prevEnemy, currentHp: newHp };
-  });
+      // aggiorna HP nemico
+      setEnemy(prevEnemy => {
+        const newHp = Math.max(0, prevEnemy.currentHp - result.damage);
+        return { ...prevEnemy, currentHp: newHp };
+      });
 
-  // Se il nemico è KO, il turno del nemico non parte
-  if (enemy.currentHp - result.damage <= 0) return;
+      // Se il nemico è KO, il turno del nemico non parte
+      if (enemy.currentHp - result.damage <= 0) return;
 
-  // turno nemico con delay
-  setTimeout(() => {
-    if (player.currentHp <= 0) return; // Player morto prima del contrattacco
+      // turno nemico con delay
+      setTimeout(() => {
+        if (player.currentHp <= 0) return; // Player morto prima del contrattacco
 
-    setPlayer(prevPlayer => {
-      const enemyResult = executeEnemyTurn(enemy, prevPlayer);
-      if (!enemyResult) return prevPlayer;
+        setPlayer(prevPlayer => {
+          const enemyResult = executeEnemyTurn(enemy, prevPlayer, setters);
+          if (!enemyResult) return prevPlayer;
 
-      return {
-        ...prevPlayer,
-        currentHp: Math.max(0, prevPlayer.currentHp - enemyResult.damage)
-      };
-    });
-  }, 500);
-}
+          return {
+            ...prevPlayer,
+            currentHp: Math.max(0, prevPlayer.currentHp - enemyResult.damage)
+          };
+        });
+      }, 500);
+    }else{
+      //non può attaccare
+      console.log("il pokemon non attacca!")
+    }
+
+  }
 
 
 
@@ -166,25 +175,7 @@ function App() {
   }
 
 
-  function trueDmgCalculator(attacker, attackerStats, defenderStats, move, defender) {
 
-    const effectiveAttack = attackerStats.attack * getStageMultiplier(attacker.statModifiers.attack)
-    const effectiveDefense = defenderStats.defense * getStageMultiplier(defender.statModifiers.defense)
-
-    const baseDamage =
-      (((((2 * attacker.level) / 5 + 2) * move.power *
-        effectiveAttack / effectiveDefense) / 50) + 2);
-
-    const modifier = evaluateModifiers(
-      attackerStats,
-      defenderStats,
-      move,
-      attacker,
-      defender
-    );
-
-    return Math.floor(baseDamage * modifier);
-  }
 
   console.log("player: ", player, "enemy: ", enemy);
 

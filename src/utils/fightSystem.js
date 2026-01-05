@@ -7,27 +7,36 @@ export function sendPlayerChoice(player, enemy, move) {
 }
 
 
-export function executePlayerTurn(attacker, defender, move) {
+export function executePlayerTurn(attacker, defender, move, setters) {
   if (!move) return;
-  if (!processTurnStatus(attacker)) return;
+  if (!processTurnStatus(attacker, setters)) return;
 
   useMove(attacker, move, defender);
 }
 
-export function executeEnemyTurn(attacker, defender) {
-  if (!processTurnStatus(attacker)) return null;
+export function executeEnemyTurn(attacker, defender, setters) {
+  if (!processTurnStatus(attacker, setters)) return null;
 
   const move = attacker.moveset?.[0];
   if (!move) return null;
 
-  return useMove(attacker, defender, move); // ritorna il danno
+  return useMove(attacker, defender, move, setters); // ritorna il danno
 }
 
 //funzione principale del fight system, riceve una mossa o oggetto e sceglie come procedere 
-export function useMove(attacker, defender, move) {
+export function useMove(attacker, defender, move, setters) {
   if (!move || attacker.currentHp <= 0) return null;
 
   const damage = trueDmgCalculator(attacker, defender, move);
+
+  // Se la mossa ha effetti sulle statistiche
+  if (move.effects) {
+    move.effects.forEach(effect => {
+      if (effect.type === "statChange") {
+        applyStatChange(defender, effect.stat, effect.amount, setters);
+      }
+    });
+  }
 
   return {
     attackerId: attacker.id,
@@ -39,32 +48,21 @@ export function useMove(attacker, defender, move) {
 
 
 //applica cambiamenti alle statistiche 
-export function applyStatChange(target, stat, amount) {
+export function applyStatChange(target, stat, amount, setters) {
+  const { setPlayer, setEnemy } = setters;
+  const updateFn = target.isPlayer ? setPlayer : setEnemy;
 
-    if (target.data.name === player.data.name) {
-        setPlayer(prev => {
-            const newStages = { ...prev.statModifiers };
-            newStages[stat] = Math.max(-6, Math.min(6, newStages[stat] + amount));
+  updateFn(prev => {
+    const newStages = { ...prev.statModifiers };
+    newStages[stat] = Math.max(-6, Math.min(6, newStages[stat] + amount));
+    return { ...prev, statModifiers: newStages };
+  });
 
-            return {
-                ...prev,
-                statModifiers: newStages
-            };
-        });
-    } else {
-        setEnemy(prev => {
-            const newStages = { ...prev.statModifiers };
-            newStages[stat] = Math.max(-6, Math.min(6, newStages[stat] + amount));
-
-            return {
-                ...prev,
-                statModifiers: newStages
-            };
-        });
-    }
+  console.log(`${target.data.name} cambia stat ${stat} di ${amount} step`);
 }
 
-export function updateHp(target, operator, amount) {
+export function updateHp(target, operator, amount, setters) {
+    const { setPlayer, setEnemy } = setters;
     const setter = target === "player" ? setPlayer : setEnemy;
 
     setter(prev => {
@@ -88,7 +86,7 @@ export function checkWhoFaster(player, enemy) {
   return player.stats.speed >= enemy.stats.speed;
 }
 
-export function useItem(item) {
+export function useItem(item, setters) {
     console.log("Hai usato l' oggetto: ", item.name);
-    updateHp("player", "+", item.healing);
+    updateHp("player", "+", 20, setters);
 }
