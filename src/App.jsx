@@ -23,6 +23,7 @@ function App() {
   const [playerMoveSet, setPlayerMoveSet] = useState([])
   const [enemyMoveSet, setEnemyMoveSet] = useState([])
   const [playerInv, setPlayerInv] = useState([])
+  const [ isPlayerTurn, setIsPlayerTurn] = useState(true)
 
   const [selectedMove, setSelectedMove] = useState()
 
@@ -89,32 +90,40 @@ function App() {
   }, [player.exp]);
 
   function handlePlayerMove() {
-    if (!selectedMove) return;
+  if (!selectedMove) return;
+  if (player.currentHp <= 0) return; // Player già KO, niente mossa
+  if (enemy.currentHp <= 0) return;  // Nemico già KO, niente mossa
 
-    // turno player
-    const result = sendPlayerChoice(player, enemy, selectedMove);
-    if (!result) return;
+  // turno player
+  const result = sendPlayerChoice(player, enemy, selectedMove);
+  if (!result) return;
 
-    // aggiorna HP nemico
-    setEnemy(prevEnemy => {
-      const newHp = Math.max(0, prevEnemy.currentHp - result.damage);
+  // aggiorna HP nemico
+  setEnemy(prevEnemy => {
+    const newHp = Math.max(0, prevEnemy.currentHp - result.damage);
+    return { ...prevEnemy, currentHp: newHp };
+  });
 
-      return { ...prevEnemy, currentHp: newHp };
+  // Se il nemico è KO, il turno del nemico non parte
+  if (enemy.currentHp - result.damage <= 0) return;
+
+  // turno nemico con delay
+  setTimeout(() => {
+    if (player.currentHp <= 0) return; // Player morto prima del contrattacco
+
+    setPlayer(prevPlayer => {
+      const enemyResult = executeEnemyTurn(enemy, prevPlayer);
+      if (!enemyResult) return prevPlayer;
+
+      return {
+        ...prevPlayer,
+        currentHp: Math.max(0, prevPlayer.currentHp - enemyResult.damage)
+      };
     });
+  }, 500);
+}
 
-    // turno nemico con delay
-    setTimeout(() => {
-      setPlayer(prevPlayer => {
-        const enemyResult = executeEnemyTurn(enemy, prevPlayer);
-        if (!enemyResult) return prevPlayer;
 
-        return {
-          ...prevPlayer,
-          currentHp: Math.max(0, prevPlayer.currentHp - enemyResult.damage)
-        };
-      });
-    }, 500);
-  }
 
 
   //inizializza il moveset(andrà fatta una chiamata a /items)
