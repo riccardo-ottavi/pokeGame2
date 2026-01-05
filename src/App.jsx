@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { typesEfficacy, idLimit } from './constants.js';
 import { fetchFromApi, fetchJson, generateRandomId } from './utils/api.js';
 import { calcStats, getStageMultiplier, evaluateModifiers, trueDmgCalculator, } from './utils/stats.js';
+import { createPokemon, createItem, instanciatePoke } from './utils/pokemonFactory.js';
 import PlayerCard from './components/PlayerCard';
 
 function App() {
@@ -206,40 +207,6 @@ function App() {
 
   useMove(attacker, move, defenderName, attackerStats, defenderStats);
 }
-
-  function createItem(data, outcomeText, healing) {
-    return {
-      data,
-      outcomeText,
-      healing,
-      name: data.name,
-      isItem: true
-    };
-  }
-
-  function createPokemon({ id, level, data }) {
-    const stats = calcStats(data.stats, level);
-    return {
-      id,
-      level,
-      data,
-      maxHp: stats.hp,
-      currentHp: stats.hp,
-      status: null,
-      volatileStatus: [],
-      exp: 0,
-      expToNextLevel: level ** 3,
-      statModifiers: {
-        attack: 0,
-        defense: 0,
-        speed: 0,
-        spAttack: 0,
-        spDefense: 0,
-        accuracy: 0,
-        evasion: 0
-      }
-    };
-  }
 
 
   function clearStatus(pokemon) {
